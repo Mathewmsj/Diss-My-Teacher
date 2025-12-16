@@ -9,7 +9,17 @@ def healthz(_request):
     return JsonResponse({"status": "ok"})
 
 
+def root(_request):
+    # 根路径返回说明，避免 404
+    return JsonResponse({
+        "message": "Diss My Teacher API",
+        "docs": "/api/",
+        "health": "/healthz"
+    })
+
+
 urlpatterns = [
+    path('', root),
     path('admin/', admin.site.urls),
     path('api/token-auth/', obtain_auth_token),
     path('api/', include('api.urls')),
