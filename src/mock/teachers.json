@@ -1,0 +1,9 @@
+[
+  { "id": 1, "name": "张教授", "department": "计算机科学系" },
+  { "id": 2, "name": "李老师", "department": "数学系" },
+  { "id": 3, "name": "王教授", "department": "物理系" },
+  { "id": 4, "name": "刘老师", "department": "化学系" },
+  { "id": 5, "name": "陈教授", "department": "英语系" },
+  { "id": 6, "name": "赵老师", "department": "历史系" }
+]
+

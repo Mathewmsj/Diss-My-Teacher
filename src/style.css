@@ -1,0 +1,249 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Pantone 2026 简约高级配色 - Marina & Burnished Lilac 主题 */
+  --primary-color: #4a7c8f;           /* Marina 海洋蓝 - 主色调，专业静谧 */
+  --primary-dark: #3a6372;            /* 深海洋蓝 - 深色变体 */
+  --primary-light: #6b9fb5;           /* 浅海洋蓝 - 浅色变体 */
+  --primary-gradient: linear-gradient(135deg, #4a7c8f 0%, #5a8fa3 100%);
+  
+  --accent-color: #b8a5c4;            /* Burnished Lilac 雾面丁香 - 辅助色，优雅柔和 */
+  --accent-light: #d4c8dd;
+  --accent-dark: #9d8baa;
+  
+  --secondary-color: #2c3e50;         /* 深灰蓝 - 文字和边框 */
+  --bg-color: #f8f9fa;                /* 极浅灰背景 - 简约大气 */
+  --card-bg: #ffffff;                 /* 纯白卡片 */
+  
+  --text-primary: #1a1a1a;            /* 深炭灰文字 - 高级感 */
+  --text-secondary: #6c757d;          /* 中灰文字 */
+  --text-light: #adb5bd;              /* 浅灰文字 */
+  
+  --border-color: #e9ecef;            /* 浅灰边框 */
+  --border-light: #f1f3f5;            /* 极浅边框 */
+  
+  --success-color: #5cb85c;           /* 柔和的成功绿 */
+  --warning-color: #f0ad4e;           /* 温暖的警告橙 */
+  --error-color: #d9534f;             /* 柔和的错误红 */
+  --info-color: #5bc0de;              /* 信息蓝 */
+  
+  --shadow: 0 2px 8px rgba(74, 124, 143, 0.08);
+  --shadow-hover: 0 4px 16px rgba(74, 124, 143, 0.15);
+  --shadow-large: 0 8px 24px rgba(74, 124, 143, 0.2);
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Element Plus 主题色覆盖 - Pantone 2026 配色 */
+:root {
+  --el-color-primary: #4a7c8f;
+  --el-color-primary-light-3: #6b9fb5;
+  --el-color-primary-light-5: #8bb4c7;
+  --el-color-primary-light-7: #adc9d9;
+  --el-color-primary-light-8: #cedce4;
+  --el-color-primary-light-9: #eef2f5;
+  --el-color-primary-dark-2: #3a6372;
+  
+  --el-color-success: #5cb85c;
+  --el-color-warning: #f0ad4e;
+  --el-color-danger: #d9534f;
+  --el-color-info: #6c757d;
+  
+  /* Element Plus 组件样式优化 */
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 20px;
+  --el-box-shadow-light: var(--shadow);
+  --el-box-shadow-base: var(--shadow-hover);
+}
+
+.app {
+  min-height: 100vh;
+}
+
+.header {
+  background: linear-gradient(135deg, #4a7c8f 0%, #5a8fa3 50%, #6b9fb5 100%);
+  color: white;
+  padding: 1rem 0;
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.header .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.logo:hover h1 {
+  opacity: 0.8;
+}
+
+.nav {
+  display: flex;
+  gap: 2rem;
+}
+
+.nav-item {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.nav-item:hover,
+.nav-item.router-link-active {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-subtle);
+  border: 1px solid var(--border-color);
+  margin-bottom: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow);
+  border-color: var(--border-light);
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: inline-block;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #1e2329;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1rem;
+  min-height: 100px;
+  resize: vertical;
+  font-family: inherit;
+  transition: border-color 0.3s;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1rem;
+  background-color: white;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+}
+
+.empty {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+}

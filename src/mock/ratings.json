@@ -1,0 +1,63 @@
+[
+  {
+    "id": 1,
+    "teacherId": 1,
+    "userId": 1,
+    "tier": "T1",
+    "reason": "讲课很认真，知识点讲解详细，作业批改及时。",
+    "createdAt": "2024-12-01T10:00:00.000Z",
+    "likes": 12,
+    "dislikes": 2
+  },
+  {
+    "id": 2,
+    "teacherId": 1,
+    "userId": 2,
+    "tier": "T2",
+    "reason": "课程内容实用，教学方法新颖，但有时讲解速度过快。",
+    "createdAt": "2024-11-28T14:30:00.000Z",
+    "likes": 8,
+    "dislikes": 1
+  },
+  {
+    "id": 3,
+    "teacherId": 2,
+    "userId": 3,
+    "tier": "T3",
+    "reason": "教学态度严谨，课程安排合理，能够激发学生的学习兴趣。",
+    "createdAt": "2024-12-03T09:15:00.000Z",
+    "likes": 15,
+    "dislikes": 0
+  },
+  {
+    "id": 4,
+    "teacherId": 3,
+    "userId": 1,
+    "tier": "T1",
+    "reason": "作业量适中，讲解清楚，课堂氛围活跃。",
+    "createdAt": "2024-11-30T18:20:00.000Z",
+    "likes": 6,
+    "dislikes": 3
+  },
+  {
+    "id": 5,
+    "teacherId": 3,
+    "userId": 2,
+    "tier": "T2",
+    "reason": "专业知识扎实，但课件设计可以更加精美一些。",
+    "createdAt": "2024-11-26T12:00:00.000Z",
+    "likes": 4,
+    "dislikes": 1
+  },
+  {
+    "id": 6,
+    "teacherId": 4,
+    "userId": 3,
+    "tier": "T1",
+    "reason": "实验课安排得很好，能够让学生充分动手实践。",
+    "createdAt": "2024-11-29T16:40:00.000Z",
+    "likes": 9,
+    "dislikes": 2
+  }
+]
+

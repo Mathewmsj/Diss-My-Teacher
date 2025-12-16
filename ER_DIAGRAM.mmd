@@ -1,0 +1,65 @@
+erDiagram
+    USERS {
+        int user_id PK
+        string name
+        string email UK
+        string password_hash
+        string school_code FK
+        datetime created_at
+    }
+
+    SCHOOLS {
+        string school_code PK
+        string school_name
+        string address
+        datetime created_at
+    }
+
+    TEACHERS {
+        int teacher_id PK
+        string name
+        int department_id FK
+        datetime created_at
+    }
+
+    DEPARTMENTS {
+        int department_id PK
+        string department_name
+        string description
+    }
+
+    RATINGS {
+        int rating_id PK
+        int teacher_id FK
+        int user_id FK
+        string tier
+        string reason
+        int likes
+        int dislikes
+        datetime created_at
+        datetime updated_at
+    }
+
+    USER_VOTES {
+        string vote_key PK
+        int user_id FK
+        date vote_date
+        int teacher_id FK
+    }
+
+    USER_INTERACTIONS {
+        int interaction_id PK
+        int rating_id FK
+        int user_id FK
+        string interaction_type
+        datetime created_at
+    }
+
+    USERS ||--o{ RATINGS : submits
+    USERS ||--o{ USER_VOTES : has
+    USERS ||--o{ USER_INTERACTIONS : makes
+    USERS }o--|| SCHOOLS : belongs_to
+    TEACHERS ||--o{ RATINGS : receives
+    TEACHERS }o--|| DEPARTMENTS : belongs_to
+    RATINGS ||--o{ USER_INTERACTIONS : has
+
