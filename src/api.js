@@ -1,4 +1,6 @@
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://10.0.163.8:8081/api';
+// 后端部署在 Render 上时的默认地址
+// 本地开发可通过设置 VITE_API_BASE 覆盖
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://diss-my-teacher.onrender.com/api';
 
 // 请求去重：相同请求在 500ms 内只发送一次
 const pendingRequests = new Map();
