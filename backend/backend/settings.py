@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+import dj_database_url
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'change-me-in-prod'
@@ -57,6 +59,15 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# 如果提供了 DATABASE_URL（例如 Render 上的 Postgres），优先使用它
+db_url = os.getenv('DATABASE_URL')
+if db_url:
+    DATABASES['default'] = dj_database_url.parse(
+        db_url,
+        conn_max_age=600,
+        ssl_require=True,
+    )
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
