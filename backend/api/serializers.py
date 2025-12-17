@@ -54,31 +54,24 @@ class RatingSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     """评论序列化器"""
     user_name = serializers.CharField(source='user.username', read_only=True)
-    masked_user_id = serializers.SerializerMethodField(read_only=True)
     reply_count = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Comment
         fields = [
-            'comment_id', 'rating', 'user', 'user_name', 'masked_user_id',
+            'comment_id', 'rating', 'user', 'user_name',
             'content', 'parent', 'likes', 'dislikes', 'reply_count',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['likes', 'dislikes', 'created_at', 'updated_at', 'user']
-
-    def get_masked_user_id(self, obj):
-        return f'anon-{obj.user_id}'
 
     def get_reply_count(self, obj):
         return obj.replies.count()
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        request = self.context.get('request')
-        # 对非管理员隐藏真实用户信息
-        if request and not request.user.is_staff:
-            data.pop('user', None)
-            data.pop('user_name', None)
+        # 始终显示用户名，只隐藏user ID
+        data.pop('user', None)
         return data
 
 

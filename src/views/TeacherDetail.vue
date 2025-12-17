@@ -111,165 +111,229 @@
                 shadow="never"
                 :body-style="{ padding: '16px' }"
           >
+            <!-- 神评标识 -->
+            <div v-if="rating.is_featured" class="featured-badge">
+              <div class="featured-icon">
+                <el-icon><Medal /></el-icon>
+              </div>
+              <span class="featured-text">神评</span>
+            </div>
+            
             <div class="rating-header">
               <div class="rating-tier">
                 <div class="hex-badge-small" :class="rating.tier.toLowerCase()">
                   <span>{{ rating.tier }}</span>
                 </div>
               </div>
-                  <el-tag size="small" type="info">{{ formatDate(rating.createdAt) }}</el-tag>
+              <div class="rating-meta">
+                <span class="rating-time">{{ formatDate(rating.createdAt) }}</span>
+                <el-tag v-if="rating.invalid" type="danger" effect="plain" size="small">已失效</el-tag>
+              </div>
             </div>
+            
             <div class="rating-reason">
               {{ rating.reason }}
             </div>
+            
             <div class="rating-actions">
-              <div class="rating-status">
-                <el-tag v-if="rating.is_featured" type="success" effect="dark" size="small">⭐ 神评</el-tag>
-                <el-tag v-if="rating.invalid" type="danger" effect="dark" size="small">已失效（踩多于赞）</el-tag>
-              </div>
-              <div class="rating-votes">
-                <el-button
-                  :type="rating.userLiked ? 'success' : 'default'"
+              <div class="action-group">
+                <button 
+                  class="action-btn" 
+                  :class="{ active: rating.userLiked }"
                   @click="toggleLike(rating)"
-                  size="small"
                 >
-                  👍 {{ rating.likes || 0 }}
-                </el-button>
-                <el-button
-                  :type="rating.userDisliked ? 'warning' : 'default'"
+                  <el-icon><CaretTop /></el-icon>
+                  <span>{{ rating.likes || 0 }}</span>
+                </button>
+                <button 
+                  class="action-btn" 
+                  :class="{ active: rating.userDisliked }"
                   @click="toggleDislike(rating)"
-                  size="small"
                 >
-                  👎 {{ rating.dislikes || 0 }}
-                </el-button>
-                <el-button
+                  <el-icon><CaretBottom /></el-icon>
+                  <span>{{ rating.dislikes || 0 }}</span>
+                </button>
+                <button 
+                  class="action-btn comment-btn"
+                  @click="toggleComments(rating.id)"
+                >
+                  <el-icon><ChatDotRound /></el-icon>
+                  <span>{{ getCommentCount(rating.id) }}</span>
+                </button>
+                <button
                   v-if="isAdmin"
-                  :type="rating.is_featured ? 'warning' : 'primary'"
+                  class="action-btn admin-btn"
                   @click="toggleFeatured(rating)"
-                  size="small"
                 >
-                  {{ rating.is_featured ? '取消神评' : '设为神评' }}
-                </el-button>
-                <el-button
-                  type="info"
-                  @click="showComments(rating)"
-                  size="small"
-                >
-                  💬 评论 ({{ getCommentCount(rating.id) }})
-                </el-button>
+                  <el-icon><Medal /></el-icon>
+                  <span>{{ rating.is_featured ? '取消' : '神评' }}</span>
+                </button>
               </div>
                 </div>
                 
-                <!-- 评论区 -->
-                <div v-if="expandedRating === rating.id" class="comments-section">
-                  <el-divider style="margin: 12px 0;" />
-                  
-                  <!-- 发表评论 -->
-                  <div class="add-comment">
-                    <el-input
-                      v-model="newComment"
-                      type="textarea"
-                      :rows="2"
-                      placeholder="发表你的评论..."
-                      :maxlength="300"
-                      show-word-limit
-                      style="margin-bottom: 8px;"
-                    />
-                    <el-button type="primary" size="small" @click="submitComment(rating.id)" :disabled="!newComment.trim()">
-                      发表评论
-                    </el-button>
-                  </div>
+                <!-- 评论区 - 始终显示 -->
+                <div class="comments-section">
+                  <el-divider style="margin: 12px 0 16px 0;" />
                   
                   <!-- 评论列表 -->
-                  <div class="comments-list" v-if="getRatingComments(rating.id).length > 0">
-                    <div
-                      v-for="comment in getRatingComments(rating.id)"
-                      :key="comment.comment_id"
-                      class="comment-item"
-                    >
-                      <div class="comment-header">
-                        <span class="comment-user">{{ comment.masked_user_id || '匿名用户' }}</span>
-                        <span class="comment-time">{{ formatDateShort(comment.created_at) }}</span>
-                      </div>
-                      <div class="comment-content">{{ comment.content }}</div>
-                      <div class="comment-actions">
-                        <el-button
-                          :type="comment.userLiked ? 'success' : ''"
-                          text
-                          size="small"
-                          @click="toggleCommentLike(comment)"
-                        >
-                          👍 {{ comment.likes || 0 }}
-                        </el-button>
-                        <el-button
-                          :type="comment.userDisliked ? 'warning' : ''"
-                          text
-                          size="small"
-                          @click="toggleCommentDislike(comment)"
-                        >
-                          👎 {{ comment.dislikes || 0 }}
-                        </el-button>
-                        <el-button
-                          text
-                          size="small"
-                          @click="replyToComment(comment)"
-                        >
-                          回复 ({{ comment.reply_count || 0 }})
-                        </el-button>
-                      </div>
-                      
-                      <!-- 回复列表 -->
-                      <div v-if="comment.replies && comment.replies.length > 0" class="replies-list">
-                        <div
-                          v-for="reply in comment.replies"
-                          :key="reply.comment_id"
-                          class="reply-item"
-                        >
+                  <div class="comments-container" v-if="getRatingComments(rating.id).length > 0">
+                    <div class="comments-header">
+                      <span class="comments-title">评论 {{ getCommentCount(rating.id) }}</span>
+                    </div>
+                    
+                    <div class="comments-list">
+                      <div
+                        v-for="(comment, index) in getDisplayComments(rating.id)"
+                        :key="comment.comment_id"
+                        class="comment-item"
+                      >
+                        <div class="comment-avatar">
+                          <el-icon size="28"><UserFilled /></el-icon>
+                        </div>
+                        <div class="comment-main">
                           <div class="comment-header">
-                            <span class="comment-user">{{ reply.masked_user_id || '匿名用户' }}</span>
-                            <span class="comment-time">{{ formatDateShort(reply.created_at) }}</span>
+                            <span class="comment-user">{{ comment.user_name || '匿名用户' }}</span>
+                            <span class="comment-time">{{ formatDateShort(comment.created_at) }}</span>
                           </div>
-                          <div class="comment-content">{{ reply.content }}</div>
+                          <div class="comment-content">{{ comment.content }}</div>
                           <div class="comment-actions">
-                            <el-button
-                              :type="reply.userLiked ? 'success' : ''"
-                              text
-                              size="small"
-                              @click="toggleCommentLike(reply)"
+                            <button 
+                              class="comment-action-btn" 
+                              :class="{ active: comment.userLiked }"
+                              @click="toggleCommentLike(comment)"
                             >
-                              👍 {{ reply.likes || 0 }}
-                            </el-button>
-                            <el-button
-                              :type="reply.userDisliked ? 'warning' : ''"
-                              text
-                              size="small"
-                              @click="toggleCommentDislike(reply)"
+                              <el-icon><CaretTop /></el-icon>
+                              <span v-if="comment.likes">{{ comment.likes }}</span>
+                            </button>
+                            <button 
+                              class="comment-action-btn" 
+                              :class="{ active: comment.userDisliked }"
+                              @click="toggleCommentDislike(comment)"
                             >
-                              👎 {{ reply.dislikes || 0 }}
-                            </el-button>
+                              <el-icon><CaretBottom /></el-icon>
+                              <span v-if="comment.dislikes">{{ comment.dislikes }}</span>
+                            </button>
+                            <button 
+                              class="comment-action-btn reply-btn"
+                              @click="replyToComment(comment)"
+                            >
+                              <span>回复</span>
+                              <span v-if="comment.reply_count" class="reply-count">{{ comment.reply_count }}</span>
+                            </button>
+                            <button
+                              v-if="isSuperAdmin"
+                              class="comment-action-btn delete-btn"
+                              @click="deleteComment(comment)"
+                            >
+                              <el-icon><Delete /></el-icon>
+                            </button>
+                          </div>
+                          
+                          <!-- 回复列表 -->
+                          <div v-if="comment.replies && comment.replies.length > 0" class="replies-list">
+                            <div
+                              v-for="reply in comment.replies"
+                              :key="reply.comment_id"
+                              class="reply-item"
+                            >
+                              <div class="reply-avatar">
+                                <el-icon size="24"><UserFilled /></el-icon>
+                              </div>
+                              <div class="reply-main">
+                                <div class="comment-header">
+                                  <span class="comment-user">{{ reply.user_name || '匿名用户' }}</span>
+                                  <span class="comment-time">{{ formatDateShort(reply.created_at) }}</span>
+                                </div>
+                                <div class="comment-content">{{ reply.content }}</div>
+                                <div class="comment-actions">
+                                  <button 
+                                    class="comment-action-btn" 
+                                    :class="{ active: reply.userLiked }"
+                                    @click="toggleCommentLike(reply)"
+                                  >
+                                    <el-icon><CaretTop /></el-icon>
+                                    <span v-if="reply.likes">{{ reply.likes }}</span>
+                                  </button>
+                                  <button 
+                                    class="comment-action-btn" 
+                                    :class="{ active: reply.userDisliked }"
+                                    @click="toggleCommentDislike(reply)"
+                                  >
+                                    <el-icon><CaretBottom /></el-icon>
+                                    <span v-if="reply.dislikes">{{ reply.dislikes }}</span>
+                                  </button>
+                                  <button
+                                    v-if="isSuperAdmin"
+                                    class="comment-action-btn delete-btn"
+                                    @click="deleteComment(reply)"
+                                  >
+                                    <el-icon><Delete /></el-icon>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <!-- 回复输入框 -->
+                          <div v-if="replyingTo === comment.comment_id" class="reply-input-box">
+                            <el-input
+                              v-model="replyContent"
+                              type="textarea"
+                              :rows="3"
+                              placeholder="写下你的回复..."
+                              :maxlength="300"
+                              show-word-limit
+                            />
+                            <div class="reply-actions">
+                              <el-button size="small" @click="cancelReply">取消</el-button>
+                              <el-button type="primary" size="small" @click="submitReply(rating.id, comment.comment_id)" :disabled="!replyContent.trim()">
+                                发表回复
+                              </el-button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                      
-                      <!-- 回复输入框 -->
-                      <div v-if="replyingTo === comment.comment_id" class="reply-input">
-                        <el-input
-                          v-model="replyContent"
-                          type="textarea"
-                          :rows="2"
-                          placeholder="输入你的回复..."
-                          :maxlength="300"
-                          show-word-limit
-                          style="margin-bottom: 8px;"
-                        />
-                        <el-button type="primary" size="small" @click="submitReply(rating.id, comment.comment_id)" :disabled="!replyContent.trim()">
-                          发表回复
+                    </div>
+                    
+                    <!-- 查看更多评论 -->
+                    <div v-if="hasMoreComments(rating.id)" class="load-more">
+                      <el-button text @click="expandAllComments(rating.id)">
+                        查看全部 {{ getCommentCount(rating.id) }} 条评论
+                        <el-icon><ArrowDown /></el-icon>
+                      </el-button>
+                    </div>
+                  </div>
+                  
+                  <!-- 发表评论 -->
+                  <div class="add-comment-box" @click="focusCommentInput(rating.id)">
+                    <div class="comment-avatar">
+                      <el-icon size="28"><UserFilled /></el-icon>
+                    </div>
+                    <div class="comment-input-wrapper">
+                      <el-input
+                        v-if="activeCommentBox === rating.id"
+                        v-model="commentInputs[rating.id]"
+                        type="textarea"
+                        :rows="3"
+                        placeholder="写下你的评论..."
+                        :maxlength="300"
+                        show-word-limit
+                        ref="commentInput"
+                      />
+                      <div v-else class="comment-placeholder">写下你的评论...</div>
+                      <div v-if="activeCommentBox === rating.id" class="comment-submit-actions">
+                        <el-button size="small" @click="cancelComment(rating.id)">取消</el-button>
+                        <el-button 
+                          type="primary" 
+                          size="small" 
+                          @click="submitComment(rating.id)" 
+                          :disabled="!commentInputs[rating.id] || !commentInputs[rating.id].trim()"
+                        >
+                          发表评论
                         </el-button>
-                        <el-button size="small" @click="cancelReply">取消</el-button>
                       </div>
                     </div>
                   </div>
-                  <el-empty v-else description="暂无评论" :image-size="60" />
                 </div>
               </el-card>
             </div>
@@ -347,15 +411,25 @@
 <script>
 import { api } from '../api'
 import { ranking } from '../utils/ranking'
-import { ArrowLeft, Star, Edit } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { 
+  ArrowLeft, Star, Edit, Medal, CaretTop, CaretBottom, 
+  ChatDotRound, UserFilled, Delete, ArrowDown 
+} from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 export default {
   name: 'TeacherDetail',
   components: {
     ArrowLeft,
     Star,
-    Edit
+    Edit,
+    Medal,
+    CaretTop,
+    CaretBottom,
+    ChatDotRound,
+    UserFilled,
+    Delete,
+    ArrowDown
   },
   data() {
     return {
@@ -370,10 +444,12 @@ export default {
       tiers: ['T1', 'T2', 'T3'],
       submitting: false,
       isAdmin: false,
+      isSuperAdmin: false,
       quotaTier: null,
       comments: [],
-      expandedRating: null,
-      newComment: '',
+      expandedRatings: {},
+      commentInputs: {},
+      activeCommentBox: null,
       replyingTo: null,
       replyContent: '',
       commentInteractions: {}
@@ -435,6 +511,7 @@ export default {
   methods: {
     checkAuth() {
       this.isAdmin = localStorage.getItem('isAdmin') === '1'
+      this.isSuperAdmin = localStorage.getItem('isSuperAdmin') === '1'
     },
     async loadData() {
       this.loading = true
@@ -644,13 +721,39 @@ export default {
         ElMessage.error(err.message || '操作失败')
       }
     },
-    async showComments(rating) {
-      if (this.expandedRating === rating.id) {
-        this.expandedRating = null
-      } else {
-        this.expandedRating = rating.id
-        await this.loadComments()
+    toggleComments(ratingId) {
+      if (!this.expandedRatings[ratingId]) {
+        this.loadComments()
       }
+    },
+    getDisplayComments(ratingId) {
+      const comments = this.getRatingComments(ratingId)
+      if (this.expandedRatings[ratingId]) {
+        return comments
+      }
+      return comments.slice(0, 3)
+    },
+    hasMoreComments(ratingId) {
+      return this.getRatingComments(ratingId).length > 3 && !this.expandedRatings[ratingId]
+    },
+    expandAllComments(ratingId) {
+      this.expandedRatings[ratingId] = true
+    },
+    focusCommentInput(ratingId) {
+      this.activeCommentBox = ratingId
+      if (!this.commentInputs[ratingId]) {
+        this.commentInputs[ratingId] = ''
+      }
+      this.$nextTick(() => {
+        const input = this.$refs.commentInput?.[0]
+        if (input) {
+          input.focus()
+        }
+      })
+    },
+    cancelComment(ratingId) {
+      this.activeCommentBox = null
+      this.commentInputs[ratingId] = ''
     },
     async loadComments() {
       try {
@@ -695,13 +798,15 @@ export default {
       return count
     },
     async submitComment(ratingId) {
-      if (!this.newComment.trim()) return
+      const content = this.commentInputs[ratingId]?.trim()
+      if (!content) return
       try {
         await api.postComment({
           rating: ratingId,
-          content: this.newComment.trim()
+          content: content
         })
-        this.newComment = ''
+        this.commentInputs[ratingId] = ''
+        this.activeCommentBox = null
         await this.loadComments()
         ElMessage.success('评论发表成功')
       } catch (err) {
@@ -745,6 +850,22 @@ export default {
         await this.loadComments()
       } catch (err) {
         ElMessage.error(err.message || '操作失败')
+      }
+    },
+    async deleteComment(comment) {
+      try {
+        await ElMessageBox.confirm('确定删除这条评论吗？', '提示', {
+          confirmButtonText: '删除',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        await api.deleteComment(comment.id)
+        await this.loadComments()
+        ElMessage.success('评论已删除')
+      } catch (err) {
+        if (err !== 'cancel') {
+          ElMessage.error(err.message || '删除失败')
+        }
       }
     }
   }
@@ -1171,89 +1292,307 @@ export default {
   display: flex;
   align-items: center;
 }
-.rating-votes {
+/* 神评标识 - 微博风格 */
+.featured-badge {
+  position: absolute;
+  top: -1px;
+  right: -1px;
   display: flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  color: white;
+  padding: 4px 12px 4px 8px;
+  border-radius: 0 8px 0 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+  z-index: 1;
+}
+
+.featured-icon {
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+}
+
+.featured-text {
+  line-height: 1;
+}
+
+.rating-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.rating-meta {
+  display: flex;
+  align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
-/* 评论区样式 */
+.rating-time {
+  color: var(--el-text-color-secondary);
+  font-size: 0.85rem;
+}
+
+/* 操作按钮 - 社交媒体风格 */
+.action-group {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--el-text-color-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-primary);
+}
+
+.action-btn.active {
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+}
+
+.action-btn.comment-btn {
+  color: var(--el-text-color-regular);
+}
+
+.action-btn.admin-btn {
+  color: var(--el-color-warning);
+}
+
+.action-btn.admin-btn:hover {
+  background: var(--el-color-warning-light-9);
+}
+
+/* 评论区样式 - 社交媒体风格 */
 .comments-section {
-  margin-top: 12px;
-  padding-top: 12px;
+  margin-top: 0;
 }
 
-.add-comment {
+.comments-container {
   margin-bottom: 16px;
+}
+
+.comments-header {
+  margin-bottom: 12px;
+}
+
+.comments-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
 }
 
 .comments-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
 }
 
 .comment-item {
-  padding: 12px;
-  background: var(--el-fill-color-light);
-  border-radius: 8px;
-  border: 1px solid var(--el-border-color-lighter);
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.comment-item:last-child {
+  border-bottom: none;
+}
+
+.comment-avatar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--el-fill-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--el-text-color-secondary);
+}
+
+.comment-main {
+  flex: 1;
+  min-width: 0;
 }
 
 .comment-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-  font-size: 0.85rem;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .comment-user {
+  font-size: 0.9rem;
   font-weight: 500;
-  color: var(--el-text-color-regular);
+  color: var(--el-text-color-primary);
 }
 
 .comment-time {
-  color: var(--el-text-color-placeholder);
   font-size: 0.8rem;
+  color: var(--el-text-color-placeholder);
 }
 
 .comment-content {
   margin-bottom: 8px;
   line-height: 1.6;
-  color: var(--el-text-color-primary);
+  color: var(--el-text-color-regular);
   word-wrap: break-word;
+  white-space: pre-wrap;
 }
 
 .comment-actions {
   display: flex;
-  gap: 8px;
+  gap: 16px;
   align-items: center;
 }
 
+.comment-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--el-text-color-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.comment-action-btn:hover {
+  color: var(--el-text-color-primary);
+}
+
+.comment-action-btn.active {
+  color: var(--el-color-primary);
+}
+
+.comment-action-btn.delete-btn {
+  color: var(--el-color-danger);
+}
+
+.comment-action-btn.delete-btn:hover {
+  color: var(--el-color-danger);
+  opacity: 0.8;
+}
+
+.reply-count {
+  margin-left: 2px;
+}
+
+/* 回复列表 */
 .replies-list {
   margin-top: 12px;
-  margin-left: 20px;
-  padding-left: 12px;
-  border-left: 2px solid var(--el-border-color);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
 }
 
 .reply-item {
-  padding: 10px;
-  background: var(--el-fill-color-blank);
-  border-radius: 6px;
-  border: 1px solid var(--el-border-color-lighter);
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--el-border-color-extralight);
 }
 
-.reply-input {
+.reply-item:last-child {
+  border-bottom: none;
+}
+
+.reply-avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--el-fill-color-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--el-text-color-placeholder);
+}
+
+.reply-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 回复输入框 */
+.reply-input-box {
   margin-top: 12px;
-  margin-left: 20px;
   padding: 12px;
-  background: var(--el-fill-color-blank);
+  background: var(--el-fill-color-light);
   border-radius: 8px;
-  border: 1px solid var(--el-border-color);
+}
+
+.reply-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* 查看更多 */
+.load-more {
+  padding: 12px 0;
+  text-align: center;
+}
+
+.load-more .el-button {
+  color: var(--el-color-primary);
+}
+
+/* 发表评论框 */
+.add-comment-box {
+  display: flex;
+  gap: 12px;
+  padding: 16px 0;
+  cursor: text;
+}
+
+.comment-input-wrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-placeholder {
+  padding: 8px 12px;
+  background: var(--el-fill-color-light);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 4px;
+  color: var(--el-text-color-placeholder);
+  cursor: text;
+  transition: all 0.2s;
+}
+
+.comment-placeholder:hover {
+  border-color: var(--el-border-color);
+  background: var(--el-fill-color);
+}
+
+.comment-submit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
 }
 </style>
