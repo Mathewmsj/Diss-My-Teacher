@@ -93,7 +93,8 @@ export default {
             this.$router.push('/')
           }
         } catch (err) {
-          ElMessage.error(err.message || '登录失败')
+          // API 错误处理已经提取了详细信息，直接显示
+          ElMessage.error(err.message || '登录失败，请检查用户名/邮箱和密码是否正确')
         } finally {
           this.loading = false
         }

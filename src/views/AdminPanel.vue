@@ -10,15 +10,42 @@
       <el-table :data="schools" style="width: 100%" size="small">
         <el-table-column prop="school_code" label="学校代码" width="160" />
         <el-table-column prop="school_name" label="学校名称" />
-        <el-table-column label="每日评分上限（按等级）" width="400">
+        <el-table-column label="每日评分上限（按等级）" width="500">
           <template #default="{ row }">
-            <div style="display: flex; gap: 10px; align-items: center;">
-              <span style="min-width: 50px;">T1:</span>
-              <el-input-number v-model="row.daily_t1_limit" :min="0" :max="99" size="small" style="width: 80px;" />
-              <span style="min-width: 50px;">T2:</span>
-              <el-input-number v-model="row.daily_t2_limit" :min="0" :max="99" size="small" style="width: 80px;" />
-              <span style="min-width: 50px;">T3:</span>
-              <el-input-number v-model="row.daily_t3_limit" :min="0" :max="99" size="small" style="width: 80px;" />
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="min-width: 40px; font-weight: 500;">T1:</span>
+                <el-input-number 
+                  v-model="row.daily_t1_limit" 
+                  :min="0" 
+                  :max="99" 
+                  size="small" 
+                  style="width: 100px;" 
+                  :controls="true"
+                />
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="min-width: 40px; font-weight: 500;">T2:</span>
+                <el-input-number 
+                  v-model="row.daily_t2_limit" 
+                  :min="0" 
+                  :max="99" 
+                  size="small" 
+                  style="width: 100px;" 
+                  :controls="true"
+                />
+              </div>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="min-width: 40px; font-weight: 500;">T3:</span>
+                <el-input-number 
+                  v-model="row.daily_t3_limit" 
+                  :min="0" 
+                  :max="99" 
+                  size="small" 
+                  style="width: 100px;" 
+                  :controls="true"
+                />
+              </div>
             </div>
           </template>
         </el-table-column>

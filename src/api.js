@@ -59,8 +59,22 @@ async function request(path, options = {}) {
       clearTimeout(timeoutId);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const msg = data.detail || res.statusText;
-        throw new Error(msg);
+        // 提取更详细的错误信息
+        let msg = data.detail || res.statusText;
+        if (!msg && data.non_field_errors && data.non_field_errors.length > 0) {
+          msg = data.non_field_errors[0];
+        } else if (!msg && typeof data === 'object') {
+          // 尝试提取第一个字段错误
+          const firstKey = Object.keys(data)[0];
+          if (firstKey && Array.isArray(data[firstKey]) && data[firstKey].length > 0) {
+            msg = `${firstKey}: ${data[firstKey][0]}`;
+          } else if (firstKey && typeof data[firstKey] === 'string') {
+            msg = `${firstKey}: ${data[firstKey]}`;
+          }
+        }
+        const error = new Error(msg || '请求失败');
+        error.response = { data, status: res.status };
+        throw error;
       }
       
       // 缓存 GET 请求结果
@@ -83,8 +97,20 @@ async function request(path, options = {}) {
               .then(async (res) => {
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
-                  const msg = data.detail || res.statusText;
-                  reject(new Error(msg));
+                  let msg = data.detail || res.statusText;
+                  if (!msg && data.non_field_errors && data.non_field_errors.length > 0) {
+                    msg = data.non_field_errors[0];
+                  } else if (!msg && typeof data === 'object') {
+                    const firstKey = Object.keys(data)[0];
+                    if (firstKey && Array.isArray(data[firstKey]) && data[firstKey].length > 0) {
+                      msg = `${firstKey}: ${data[firstKey][0]}`;
+                    } else if (firstKey && typeof data[firstKey] === 'string') {
+                      msg = `${firstKey}: ${data[firstKey]}`;
+                    }
+                  }
+                  const error = new Error(msg || '请求失败');
+                  error.response = { data, status: res.status };
+                  reject(error);
                 } else {
                   if (cacheKey) {
                     cache.set(cacheKey, { data, timestamp: Date.now() });

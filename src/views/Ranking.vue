@@ -477,17 +477,36 @@ export default {
         this.currentCommentIndex[teacherId] = 0
       }
       
-      // 每3秒切换一次
-      this.commentTimers[teacherId] = setInterval(() => {
+      // 根据当前评论长度计算显示时间（自适应）
+      const getDisplayTime = (comment) => {
+        if (!comment || !comment.reason) return 3000
+        const textLength = comment.reason.length
+        // 基础时间 3 秒，每 10 个字增加 1 秒，最多 10 秒
+        const baseTime = 3000
+        const extraTime = Math.min(Math.floor(textLength / 10) * 1000, 7000)
+        return baseTime + extraTime
+      }
+      
+      // 设置下一个评论的切换时间
+      const scheduleNext = () => {
         const comments = this.getFeaturedComments(teacherId)
-        if (comments.length > 0) {
-          this.currentCommentIndex[teacherId] = (this.currentCommentIndex[teacherId] + 1) % comments.length
-        }
-      }, 3000)
+        if (comments.length === 0) return
+        
+        const currentIndex = this.currentCommentIndex[teacherId] || 0
+        const currentComment = comments[currentIndex]
+        const displayTime = getDisplayTime(currentComment)
+        
+        this.commentTimers[teacherId] = setTimeout(() => {
+          this.currentCommentIndex[teacherId] = (currentIndex + 1) % comments.length
+          scheduleNext() // 递归设置下一个
+        }, displayTime)
+      }
+      
+      scheduleNext()
     },
     stopCommentCarousel(teacherId) {
       if (this.commentTimers[teacherId]) {
-        clearInterval(this.commentTimers[teacherId])
+        clearTimeout(this.commentTimers[teacherId])
         delete this.commentTimers[teacherId]
       }
     },
