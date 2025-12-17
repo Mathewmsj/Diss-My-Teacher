@@ -108,6 +108,7 @@
             v-for="rating in sortedRatings"
             :key="rating.id"
             class="rating-item"
+            :class="{ 'featured-rating': rating.is_featured }"
                 shadow="never"
                 :body-style="{ padding: '16px' }"
           >
@@ -171,9 +172,9 @@
               </div>
                 </div>
                 
-                <!-- 评论区 - 始终显示 -->
-                <div class="comments-section">
-                  <el-divider style="margin: 12px 0 16px 0;" />
+                <!-- 评论区 - 点击评论按钮后显示 -->
+                <div v-if="expandedRatings[rating.id]" class="comments-section">
+                  <el-divider style="margin: 12px 0 12px 0;" />
                   
                   <!-- 评论列表 -->
                   <div class="comments-container" v-if="getRatingComments(rating.id).length > 0">
@@ -305,24 +306,21 @@
                   </div>
                   
                   <!-- 发表评论 -->
-                  <div class="add-comment-box" @click="focusCommentInput(rating.id)">
+                  <div class="add-comment-box">
                     <div class="comment-avatar">
-                      <el-icon size="28"><UserFilled /></el-icon>
+                      <el-icon size="24"><UserFilled /></el-icon>
                     </div>
                     <div class="comment-input-wrapper">
                       <el-input
-                        v-if="activeCommentBox === rating.id"
                         v-model="commentInputs[rating.id]"
                         type="textarea"
-                        :rows="3"
+                        :rows="2"
                         placeholder="写下你的评论..."
                         :maxlength="300"
                         show-word-limit
-                        ref="commentInput"
                       />
-                      <div v-else class="comment-placeholder">写下你的评论...</div>
-                      <div v-if="activeCommentBox === rating.id" class="comment-submit-actions">
-                        <el-button size="small" @click="cancelComment(rating.id)">取消</el-button>
+                      <div class="comment-submit-actions">
+                        <el-button size="small" @click="closeComments(rating.id)">取消</el-button>
                         <el-button 
                           type="primary" 
                           size="small" 
@@ -722,9 +720,16 @@ export default {
       }
     },
     toggleComments(ratingId) {
-      if (!this.expandedRatings[ratingId]) {
+      if (this.expandedRatings[ratingId]) {
+        this.expandedRatings[ratingId] = false
+      } else {
+        this.expandedRatings[ratingId] = true
         this.loadComments()
       }
+    },
+    closeComments(ratingId) {
+      this.expandedRatings[ratingId] = false
+      this.commentInputs[ratingId] = ''
     },
     getDisplayComments(ratingId) {
       const comments = this.getRatingComments(ratingId)
@@ -737,23 +742,8 @@ export default {
       return this.getRatingComments(ratingId).length > 3 && !this.expandedRatings[ratingId]
     },
     expandAllComments(ratingId) {
-      this.expandedRatings[ratingId] = true
-    },
-    focusCommentInput(ratingId) {
-      this.activeCommentBox = ratingId
-      if (!this.commentInputs[ratingId]) {
-        this.commentInputs[ratingId] = ''
-      }
-      this.$nextTick(() => {
-        const input = this.$refs.commentInput?.[0]
-        if (input) {
-          input.focus()
-        }
-      })
-    },
-    cancelComment(ratingId) {
-      this.activeCommentBox = null
-      this.commentInputs[ratingId] = ''
+      // 展开全部评论的标记，不需要修改expandedRatings状态
+      this.$set(this.expandedRatings, `${ratingId}_showAll`, true)
     },
     async loadComments() {
       try {
@@ -806,7 +796,6 @@ export default {
           content: content
         })
         this.commentInputs[ratingId] = ''
-        this.activeCommentBox = null
         await this.loadComments()
         ElMessage.success('评论发表成功')
       } catch (err) {
@@ -1292,32 +1281,58 @@ export default {
   display: flex;
   align-items: center;
 }
-/* 神评标识 - 微博风格 */
+/* 神评标识 - 更突出的设计 */
 .featured-badge {
   position: absolute;
-  top: -1px;
-  right: -1px;
+  top: -2px;
+  right: -2px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
   color: white;
-  padding: 4px 12px 4px 8px;
-  border-radius: 0 8px 0 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
-  z-index: 1;
+  padding: 6px 16px 6px 10px;
+  border-radius: 0 6px 0 16px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 3px 12px rgba(255, 107, 107, 0.5);
+  z-index: 2;
+  animation: featuredBadge 2s ease-in-out infinite;
+}
+
+@keyframes featuredBadge {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 3px 12px rgba(255, 107, 107, 0.5);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 4px 16px rgba(255, 107, 107, 0.7);
+  }
 }
 
 .featured-icon {
   display: flex;
   align-items: center;
-  font-size: 1rem;
+  font-size: 1.1rem;
+  animation: iconRotate 3s ease-in-out infinite;
+}
+
+@keyframes iconRotate {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
 }
 
 .featured-text {
   line-height: 1;
+  letter-spacing: 0.5px;
 }
 
 .rating-header {
@@ -1381,21 +1396,21 @@ export default {
   background: var(--el-color-warning-light-9);
 }
 
-/* 评论区样式 - 社交媒体风格 */
+/* 评论区样式 - 更紧凑的设计 */
 .comments-section {
   margin-top: 0;
 }
 
 .comments-container {
-  margin-bottom: 16px;
-}
-
-.comments-header {
   margin-bottom: 12px;
 }
 
+.comments-header {
+  margin-bottom: 8px;
+}
+
 .comments-title {
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--el-text-color-primary);
 }
@@ -1408,9 +1423,9 @@ export default {
 
 .comment-item {
   display: flex;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--el-border-color-extralight);
 }
 
 .comment-item:last-child {
@@ -1419,8 +1434,8 @@ export default {
 
 .comment-avatar {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--el-fill-color);
   display: flex;
@@ -1437,24 +1452,25 @@ export default {
 .comment-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
+  gap: 6px;
+  margin-bottom: 4px;
 }
 
 .comment-user {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 500;
   color: var(--el-text-color-primary);
 }
 
 .comment-time {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--el-text-color-placeholder);
 }
 
 .comment-content {
-  margin-bottom: 8px;
-  line-height: 1.6;
+  margin-bottom: 6px;
+  line-height: 1.5;
+  font-size: 0.85rem;
   color: var(--el-text-color-regular);
   word-wrap: break-word;
   white-space: pre-wrap;
@@ -1462,19 +1478,19 @@ export default {
 
 .comment-actions {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
 }
 
 .comment-action-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   padding: 0;
   border: none;
   background: none;
   color: var(--el-text-color-secondary);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   cursor: pointer;
   transition: color 0.2s;
 }
@@ -1497,12 +1513,12 @@ export default {
 }
 
 .reply-count {
-  margin-left: 2px;
+  margin-left: 1px;
 }
 
 /* 回复列表 */
 .replies-list {
-  margin-top: 12px;
+  margin-top: 8px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -1510,8 +1526,8 @@ export default {
 
 .reply-item {
   display: flex;
-  gap: 10px;
-  padding: 10px 0;
+  gap: 8px;
+  padding: 6px 0;
   border-bottom: 1px solid var(--el-border-color-extralight);
 }
 
@@ -1521,8 +1537,8 @@ export default {
 
 .reply-avatar {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: var(--el-fill-color-light);
   display: flex;
@@ -1538,35 +1554,35 @@ export default {
 
 /* 回复输入框 */
 .reply-input-box {
-  margin-top: 12px;
-  padding: 12px;
+  margin-top: 8px;
+  padding: 10px;
   background: var(--el-fill-color-light);
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .reply-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 6px;
+  margin-top: 6px;
 }
 
 /* 查看更多 */
 .load-more {
-  padding: 12px 0;
+  padding: 8px 0;
   text-align: center;
 }
 
 .load-more .el-button {
   color: var(--el-color-primary);
+  font-size: 0.85rem;
 }
 
 /* 发表评论框 */
 .add-comment-box {
   display: flex;
-  gap: 12px;
-  padding: 16px 0;
-  cursor: text;
+  gap: 10px;
+  padding: 12px 0 0 0;
 }
 
 .comment-input-wrapper {
@@ -1574,25 +1590,10 @@ export default {
   min-width: 0;
 }
 
-.comment-placeholder {
-  padding: 8px 12px;
-  background: var(--el-fill-color-light);
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 4px;
-  color: var(--el-text-color-placeholder);
-  cursor: text;
-  transition: all 0.2s;
-}
-
-.comment-placeholder:hover {
-  border-color: var(--el-border-color);
-  background: var(--el-fill-color);
-}
-
 .comment-submit-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 6px;
+  margin-top: 6px;
 }
 </style>
