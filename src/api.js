@@ -219,6 +219,25 @@ export const api = {
     request(`/ratings/${id}/like/`, { method: 'POST' }),
   dislikeRating: (id) =>
     request(`/ratings/${id}/dislike/`, { method: 'POST' }),
+  setFeatured: (id, is_featured) =>
+    request(`/ratings/${id}/set_featured/`, {
+      method: 'POST',
+      body: JSON.stringify({ is_featured }),
+    }),
+  // Comment 相关
+  getComments: (ratingId) => request(`/comments/?rating=${ratingId}`),
+  getAllComments: () => request('/comments/'),
+  postComment: (data) =>
+    request('/comments/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  deleteComment: (id) =>
+    request(`/comments/${id}/`, { method: 'DELETE' }),
+  likeComment: (id) =>
+    request(`/comments/${id}/like/`, { method: 'POST' }),
+  dislikeComment: (id) =>
+    request(`/comments/${id}/dislike/`, { method: 'POST' }),
   // 超级管理员接口
   loginSuperAdmin: (username, password) =>
     request('/superadmin-login/', {
@@ -271,24 +290,4 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ new_school_code: newCode }),
     }),
-
-  // 评论相关
-  getComments: (ratingId) =>
-    request(`/comments/?rating=${ratingId}`),
-  postComment: (data) =>
-    request('/comments/', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    }),
-  likeComment: (id) =>
-    request(`/comments/${id}/like/`, { method: 'POST' }),
-  dislikeComment: (id) =>
-    request(`/comments/${id}/dislike/`, { method: 'POST' }),
-  setFeaturedComment: (id, isFeatured) =>
-    request(`/comments/${id}/set_featured/`, {
-      method: 'POST',
-      body: JSON.stringify({ is_featured: isFeatured })
-    }),
-  deleteComment: (id) =>
-    request(`/comments/${id}/`, { method: 'DELETE' })
 };

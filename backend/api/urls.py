@@ -6,6 +6,7 @@ from .views import (
     DepartmentViewSet,
     TeacherViewSet,
     RatingViewSet,
+    CommentViewSet,
     UserVoteViewSet,
     UserInteractionViewSet,
     UserViewSet,
@@ -14,7 +15,6 @@ from .views import (
     LoginUserViewSet,
     SuperAdminLoginViewSet,
     SuperAdminViewSet,
-    CommentViewSet,
 )
 
 router = DefaultRouter()
@@ -22,6 +22,7 @@ router.register(r'schools', SchoolViewSet)
 router.register(r'departments', DepartmentViewSet)
 router.register(r'teachers', TeacherViewSet)
 router.register(r'ratings', RatingViewSet)
+router.register(r'comments', CommentViewSet)
 router.register(r'user-votes', UserVoteViewSet)
 router.register(r'interactions', UserInteractionViewSet)
 router.register(r'users', UserViewSet)
@@ -30,7 +31,6 @@ router.register(r'signup', SignupViewSet, basename='signup')
 router.register(r'login-user', LoginUserViewSet, basename='login-user')
 router.register(r'superadmin-login', SuperAdminLoginViewSet, basename='superadmin-login')
 router.register(r'superadmin', SuperAdminViewSet, basename='superadmin')
-router.register(r'comments', CommentViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

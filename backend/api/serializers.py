@@ -34,9 +34,9 @@ class RatingSerializer(serializers.ModelSerializer):
         model = Rating
         fields = [
             'rating_id', 'teacher', 'teacher_name', 'user', 'user_name', 'masked_user_id',
-            'tier', 'reason', 'likes', 'dislikes', 'created_at', 'updated_at'
+            'tier', 'reason', 'likes', 'dislikes', 'is_featured', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['likes', 'dislikes', 'created_at', 'updated_at', 'user']
+        read_only_fields = ['likes', 'dislikes', 'is_featured', 'created_at', 'updated_at', 'user']
 
     def get_masked_user_id(self, obj):
         return f'anon-{obj.user_id}'
@@ -45,6 +45,37 @@ class RatingSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         request = self.context.get('request')
         # 对非管理员隐藏真实用户信息，保留匿名标识
+        if request and not request.user.is_staff:
+            data.pop('user', None)
+            data.pop('user_name', None)
+        return data
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    """评论序列化器"""
+    user_name = serializers.CharField(source='user.username', read_only=True)
+    masked_user_id = serializers.SerializerMethodField(read_only=True)
+    reply_count = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = [
+            'comment_id', 'rating', 'user', 'user_name', 'masked_user_id',
+            'content', 'parent', 'likes', 'dislikes', 'reply_count',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['likes', 'dislikes', 'created_at', 'updated_at', 'user']
+
+    def get_masked_user_id(self, obj):
+        return f'anon-{obj.user_id}'
+
+    def get_reply_count(self, obj):
+        return obj.replies.count()
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        # 对非管理员隐藏真实用户信息
         if request and not request.user.is_staff:
             data.pop('user', None)
             data.pop('user_name', None)
@@ -107,7 +138,7 @@ class SuperAdminRatingSerializer(serializers.ModelSerializer):
             'rating_id', 'teacher', 'teacher_id', 'teacher_name', 
             'user', 'user_id', 'user_name', 'user_email', 'user_real_name',
             'school_name', 'school_code',
-            'tier', 'reason', 'likes', 'dislikes', 
+            'tier', 'reason', 'likes', 'dislikes', 'is_featured',
             'liked_users', 'disliked_users',
             'created_at', 'updated_at'
         ]
@@ -197,48 +228,4 @@ class SignupSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
-
-
-class CommentSerializer(serializers.ModelSerializer):
-    """评论序列化器"""
-    user_name = serializers.CharField(source='user.username', read_only=True)
-    user_liked = serializers.SerializerMethodField()
-    user_disliked = serializers.SerializerMethodField()
-    replies_count = serializers.SerializerMethodField()
-    replies = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Comment
-        fields = ['comment_id', 'rating', 'user', 'user_name', 'content', 'parent_comment',
-                  'likes', 'dislikes', 'is_featured', 'user_liked', 'user_disliked',
-                  'replies_count', 'replies', 'created_at', 'updated_at']
-        read_only_fields = ['user', 'likes', 'dislikes', 'is_featured', 'created_at', 'updated_at']
-
-    def get_user_liked(self, obj):
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return CommentInteraction.objects.filter(
-                comment=obj,
-                user=request.user,
-                interaction_type=CommentInteraction.LIKE
-            ).exists()
-        return False
-
-    def get_user_disliked(self, obj):
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return CommentInteraction.objects.filter(
-                comment=obj,
-                user=request.user,
-                interaction_type=CommentInteraction.DISLIKE
-            ).exists()
-        return False
-
-    def get_replies_count(self, obj):
-        return obj.replies.count()
-
-    def get_replies(self, obj):
-        # 只返回直接回复，最多5条
-        replies = obj.replies.all()[:5]
-        return CommentSerializer(replies, many=True, context=self.context).data
 
