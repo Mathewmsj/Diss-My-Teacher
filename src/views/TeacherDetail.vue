@@ -512,11 +512,18 @@ export default {
     },
     async toggleFeatured(rating) {
       try {
-        const result = await api.toggleFeatured(rating.id)
+        // 使用 rating_id 或 id
+        const ratingId = rating.rating_id || rating.id
+        if (!ratingId) {
+          ElMessage.error('评分ID不存在')
+          return
+        }
+        const result = await api.toggleFeatured(ratingId)
         ElMessage.success(result.detail || (rating.is_featured ? '已取消神评' : '已设为神评'))
         await this.loadData()
       } catch (err) {
-        ElMessage.error(err.message || '操作失败')
+        console.error('设置神评失败:', err)
+        ElMessage.error(err.message || '操作失败，请检查您是否有管理员权限')
       }
     }
   }
