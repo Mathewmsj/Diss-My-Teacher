@@ -105,6 +105,7 @@
           <el-table :data="filteredUsers" border stripe>
             <el-table-column prop="id" label="ID" width="80" />
             <el-table-column prop="username" label="用户名" width="150" />
+            <el-table-column prop="real_name" label="真实姓名" width="150" />
             <el-table-column prop="email" label="邮箱" width="200" />
             <el-table-column prop="school_name" label="所属学校" />
             <el-table-column prop="school_code" label="学校代码" width="120" />

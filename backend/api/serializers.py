@@ -74,11 +74,24 @@ class UserSerializer(serializers.ModelSerializer):
                   'is_active', 'date_joined', 'last_login']
 
 
+class SuperAdminUserSerializer(serializers.ModelSerializer):
+    """超级管理员专用：显示用户的真实姓名"""
+    school_name = serializers.CharField(source='school.school_name', read_only=True)
+    school_code = serializers.CharField(source='school.school_code', read_only=True)
+    
+    class Meta:
+        model = get_user_model()
+        fields = ['id', 'username', 'email', 'real_name', 'school', 'school_name', 'school_code', 
+                  'is_approved', 'can_rate', 'approval_status', 'is_staff', 'is_superuser', 
+                  'is_active', 'date_joined', 'last_login']
+
+
 class SuperAdminRatingSerializer(serializers.ModelSerializer):
     """超级管理员专用：显示完整的评分信息，包括用户详情"""
     user_name = serializers.CharField(source='user.username', read_only=True)
     user_email = serializers.CharField(source='user.email', read_only=True)
     user_id = serializers.IntegerField(source='user.id', read_only=True)
+    user_real_name = serializers.CharField(source='user.real_name', read_only=True)
     teacher_name = serializers.CharField(source='teacher.name', read_only=True)
     teacher_id = serializers.IntegerField(source='teacher.teacher_id', read_only=True)
     school_name = serializers.CharField(source='teacher.school.school_name', read_only=True)
@@ -92,7 +105,7 @@ class SuperAdminRatingSerializer(serializers.ModelSerializer):
         model = Rating
         fields = [
             'rating_id', 'teacher', 'teacher_id', 'teacher_name', 
-            'user', 'user_id', 'user_name', 'user_email',
+            'user', 'user_id', 'user_name', 'user_email', 'user_real_name',
             'school_name', 'school_code',
             'tier', 'reason', 'likes', 'dislikes', 
             'liked_users', 'disliked_users',
@@ -136,10 +149,11 @@ class SuperAdminRatingSerializer(serializers.ModelSerializer):
 class SignupSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     school_code = serializers.CharField(write_only=True, required=True, allow_blank=False)
+    real_name = serializers.CharField(required=True, max_length=128, allow_blank=False)
 
     class Meta:
         model = get_user_model()
-        fields = ['username', 'email', 'password', 'school_code']
+        fields = ['username', 'email', 'password', 'school_code', 'real_name']
 
     def validate_username(self, value):
         if get_user_model().objects.filter(username=value).exists():
@@ -151,11 +165,21 @@ class SignupSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('邮箱已存在')
         return value
 
+    def validate_real_name(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError('真实姓名不能为空')
+        if get_user_model().objects.filter(real_name=value.strip()).exists():
+            raise serializers.ValidationError('真实姓名已被使用，请使用其他姓名')
+        return value.strip()
+
     def create(self, validated_data):
         school_code = validated_data.pop('school_code', '').strip()
         if not school_code:
             raise serializers.ValidationError({'school_code': '学校代码必填'})
         password = validated_data.pop('password')
+        real_name = validated_data.pop('real_name', '').strip()
+        if not real_name:
+            raise serializers.ValidationError({'real_name': '真实姓名不能为空'})
         school = None
         if school_code:
             school, _ = School.objects.get_or_create(
@@ -164,6 +188,7 @@ class SignupSerializer(serializers.ModelSerializer):
             )
         user = get_user_model().objects.create(
             **validated_data,
+            real_name=real_name,
             school=school,
             is_approved=False,
             can_rate=True,

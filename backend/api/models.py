@@ -41,6 +41,7 @@ class User(AbstractUser):
     approval_status = models.CharField(max_length=16, choices=APPROVAL_CHOICES, default=APPROVAL_PENDING)
     is_approved = models.BooleanField(default=False)
     can_rate = models.BooleanField(default=True)
+    real_name = models.CharField(max_length=128, unique=True, null=True, blank=True, verbose_name='真实姓名')
 
     def __str__(self):
         return self.username

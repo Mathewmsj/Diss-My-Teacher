@@ -13,6 +13,7 @@ from .serializers import (
     UserVoteSerializer,
     UserInteractionSerializer,
     UserSerializer,
+    SuperAdminUserSerializer,
     SignupSerializer,
     SuperAdminRatingSerializer,
 )
@@ -737,13 +738,13 @@ class SuperAdminViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'])
     def all_users(self, request):
-        """获取所有用户（包含完整信息）"""
+        """获取所有用户（包含完整信息，包括真实姓名）"""
         check = self.check_superuser(request)
         if check:
             return check
         
         users = User.objects.select_related('school').all()
-        serializer = UserSerializer(users, many=True)
+        serializer = SuperAdminUserSerializer(users, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
