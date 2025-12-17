@@ -165,9 +165,10 @@
                       class="comment-item"
                     >
                       <div class="comment-tier">
-                        <el-tag :type="currentComment(teacher.id)?.tier === 'T3' ? 'danger' : currentComment(teacher.id)?.tier === 'T2' ? 'warning' : 'info'" size="small">
-                          {{ currentComment(teacher.id)?.tier }}
-                        </el-tag>
+                        <div class="hex-badge-small" :class="[currentComment(teacher.id)?.tier?.toLowerCase(), { 'featured': currentComment(teacher.id)?.is_featured }]">
+                          <span>{{ currentComment(teacher.id)?.tier }}</span>
+                        </div>
+                        <el-tag v-if="currentComment(teacher.id)?.is_featured" type="warning" effect="dark" size="small" style="margin-left: 8px;">神评</el-tag>
                       </div>
                       <div class="comment-content">
                         <div class="comment-text">{{ currentComment(teacher.id)?.reason }}</div>
@@ -454,6 +455,9 @@ export default {
         .filter(r => (r.teacherId || r.teacher) === teacherId)
         .filter(r => !r.invalid) // 排除失效的评论
         .sort((a, b) => {
+          // 神评优先
+          if (a.is_featured && !b.is_featured) return -1
+          if (!a.is_featured && b.is_featured) return 1
           // 按点赞数降序，相同点赞数按时间降序
           const likesA = a.likes || 0
           const likesB = b.likes || 0
@@ -926,6 +930,145 @@ export default {
 
 .comment-tier {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 六边形徽章小尺寸（用于精选评论） */
+.hex-badge-small {
+  position: relative;
+  width: 40px;
+  height: 24px;
+  background-color: #4a7c8f;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  transition: all 0.3s ease;
+}
+
+.hex-badge-small::before,
+.hex-badge-small::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+}
+
+.hex-badge-small::before {
+  bottom: 100%;
+  border-bottom: 12px solid #4a7c8f;
+}
+
+.hex-badge-small::after {
+  top: 100%;
+  border-top: 12px solid #4a7c8f;
+}
+
+.hex-badge-small.t1 {
+  background-color: #4a7c8f;
+}
+
+.hex-badge-small.t1::before {
+  border-bottom-color: #4a7c8f;
+}
+
+.hex-badge-small.t1::after {
+  border-top-color: #4a7c8f;
+}
+
+.hex-badge-small.t2 {
+  background-color: #6b9fb5;
+}
+
+.hex-badge-small.t2::before {
+  border-bottom-color: #6b9fb5;
+}
+
+.hex-badge-small.t2::after {
+  border-top-color: #6b9fb5;
+}
+
+.hex-badge-small.t3 {
+  background-color: #b8a5c4;
+}
+
+.hex-badge-small.t3::before {
+  border-bottom-color: #b8a5c4;
+}
+
+.hex-badge-small.t3::after {
+  border-top-color: #b8a5c4;
+}
+
+.hex-badge-small span {
+  position: relative;
+  z-index: 1;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: white;
+}
+
+/* 神评渐变橙红色样式 - 保持六边形形状（clip-path已应用） */
+/* T1神评：深橙红色渐变 */
+.hex-badge-small.featured.t1 {
+  background: linear-gradient(135deg, #ff4500 0%, #ff6b35 50%, #ff8c42 100%);
+  box-shadow: 0 0 15px rgba(255, 69, 0, 0.6);
+}
+
+.hex-badge-small.featured.t1::before {
+  border-bottom-color: #ff4500;
+}
+
+.hex-badge-small.featured.t1::after {
+  border-top-color: #ff8c42;
+}
+
+.hex-badge-small.featured.t1:hover {
+  box-shadow: 0 0 20px rgba(255, 69, 0, 0.8);
+  transform: scale(1.05);
+}
+
+/* T2神评：橙黄色渐变 */
+.hex-badge-small.featured.t2 {
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 50%, #ffa500 100%);
+  box-shadow: 0 0 15px rgba(255, 107, 53, 0.6);
+}
+
+.hex-badge-small.featured.t2::before {
+  border-bottom-color: #ff6b35;
+}
+
+.hex-badge-small.featured.t2::after {
+  border-top-color: #ffa500;
+}
+
+.hex-badge-small.featured.t2:hover {
+  box-shadow: 0 0 20px rgba(255, 107, 53, 0.8);
+  transform: scale(1.05);
+}
+
+/* T3神评：浅橙金色渐变 */
+.hex-badge-small.featured.t3 {
+  background: linear-gradient(135deg, #f7931e 0%, #ffa500 50%, #ffb347 100%);
+  box-shadow: 0 0 15px rgba(247, 147, 30, 0.6);
+}
+
+.hex-badge-small.featured.t3::before {
+  border-bottom-color: #f7931e;
+}
+
+.hex-badge-small.featured.t3::after {
+  border-top-color: #ffb347;
+}
+
+.hex-badge-small.featured.t3:hover {
+  box-shadow: 0 0 20px rgba(247, 147, 30, 0.8);
+  transform: scale(1.05);
 }
 
 .comment-content {

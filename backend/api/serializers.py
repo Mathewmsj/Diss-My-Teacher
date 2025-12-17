@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from .models import School, Department, Teacher, Rating, UserVote, UserInteraction, Comment, CommentInteraction
+from .models import School, Department, Teacher, Rating, UserVote, UserInteraction
 
 
 class SchoolSerializer(serializers.ModelSerializer):
@@ -48,30 +48,6 @@ class RatingSerializer(serializers.ModelSerializer):
         if request and not request.user.is_staff:
             data.pop('user', None)
             data.pop('user_name', None)
-        return data
-
-
-class CommentSerializer(serializers.ModelSerializer):
-    """评论序列化器"""
-    user_name = serializers.CharField(source='user.username', read_only=True)
-    reply_count = serializers.SerializerMethodField(read_only=True)
-
-    class Meta:
-        model = Comment
-        fields = [
-            'comment_id', 'rating', 'user', 'user_name',
-            'content', 'parent', 'likes', 'dislikes', 'reply_count',
-            'created_at', 'updated_at'
-        ]
-        read_only_fields = ['likes', 'dislikes', 'created_at', 'updated_at', 'user']
-
-    def get_reply_count(self, obj):
-        return obj.replies.count()
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        # 始终显示用户名，只隐藏user ID
-        data.pop('user', None)
         return data
 
 

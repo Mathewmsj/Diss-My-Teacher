@@ -4,13 +4,12 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-from .models import School, Department, Teacher, Rating, UserVote, UserInteraction, Comment, CommentInteraction
+from .models import School, Department, Teacher, Rating, UserVote, UserInteraction
 from .serializers import (
     SchoolSerializer,
     DepartmentSerializer,
     TeacherSerializer,
     RatingSerializer,
-    CommentSerializer,
     UserVoteSerializer,
     UserInteractionSerializer,
     UserSerializer,
@@ -328,96 +327,17 @@ class RatingViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
-    def set_featured(self, request, pk=None):
+    def toggle_featured(self, request, pk=None):
         """管理员设置/取消神评"""
         rating = self.get_object()
-        admin_school = getattr(request.user, 'school', None)
-        
-        # 检查权限：管理员只能设置本校老师的评分为神评
-        if admin_school and rating.teacher.school and admin_school != rating.teacher.school and not request.user.is_superuser:
-            return Response({'detail': '无权设置其他学校老师的神评'}, status=status.HTTP_403_FORBIDDEN)
-        
-        is_featured = request.data.get('is_featured', False)
-        rating.is_featured = bool(is_featured)
+        rating.is_featured = not rating.is_featured
         rating.save(update_fields=['is_featured'])
-        
+        status_text = '已设为神评' if rating.is_featured else '已取消神评'
         serializer = self.get_serializer(rating)
-        return Response(serializer.data)
-
-
-class CommentViewSet(viewsets.ModelViewSet):
-    """评论视图集"""
-    queryset = Comment.objects.select_related('user', 'rating', 'parent').all()
-    serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_permissions(self):
-        if self.action in ['create', 'like', 'dislike']:
-            return [permissions.IsAuthenticated()]
-        elif self.action in ['update', 'partial_update', 'destroy']:
-            return [permissions.IsAuthenticated()]
-        return [permissions.AllowAny()]
-
-    def perform_create(self, serializer):
-        """创建评论时自动设置当前用户"""
-        serializer.save(user=self.request.user)
-
-    def destroy(self, request, *args, **kwargs):
-        """只允许用户删除自己的评论，或管理员/超级管理员删除任何评论"""
-        comment = self.get_object()
-        if comment.user != request.user and not request.user.is_staff and not request.user.is_superuser:
-            return Response({'detail': '无权删除此评论'}, status=status.HTTP_403_FORBIDDEN)
-        return super().destroy(request, *args, **kwargs)
-
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
-    def like(self, request, pk=None):
-        """点赞评论"""
-        comment = self.get_object()
-        user = request.user
-        interaction = CommentInteraction.objects.filter(user=user, comment=comment).first()
-
-        if interaction and interaction.interaction_type == CommentInteraction.LIKE:
-            # 取消点赞
-            comment.likes = max(0, comment.likes - 1)
-            interaction.delete()
-        else:
-            # 从点踩切换到点赞
-            if interaction and interaction.interaction_type == CommentInteraction.DISLIKE:
-                comment.dislikes = max(0, comment.dislikes - 1)
-                interaction.interaction_type = CommentInteraction.LIKE
-                interaction.save(update_fields=['interaction_type'])
-            else:
-                CommentInteraction.objects.create(user=user, comment=comment, interaction_type=CommentInteraction.LIKE)
-            comment.likes = (comment.likes or 0) + 1
-
-        comment.save(update_fields=['likes', 'dislikes'])
-        serializer = self.get_serializer(comment)
-        return Response(serializer.data)
-
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
-    def dislike(self, request, pk=None):
-        """点踩评论"""
-        comment = self.get_object()
-        user = request.user
-        interaction = CommentInteraction.objects.filter(user=user, comment=comment).first()
-
-        if interaction and interaction.interaction_type == CommentInteraction.DISLIKE:
-            # 取消点踩
-            comment.dislikes = max(0, comment.dislikes - 1)
-            interaction.delete()
-        else:
-            # 从点赞切换到点踩
-            if interaction and interaction.interaction_type == CommentInteraction.LIKE:
-                comment.likes = max(0, comment.likes - 1)
-                interaction.interaction_type = CommentInteraction.DISLIKE
-                interaction.save(update_fields=['interaction_type'])
-            else:
-                CommentInteraction.objects.create(user=user, comment=comment, interaction_type=CommentInteraction.DISLIKE)
-            comment.dislikes = (comment.dislikes or 0) + 1
-
-        comment.save(update_fields=['likes', 'dislikes'])
-        serializer = self.get_serializer(comment)
-        return Response(serializer.data)
+        return Response({
+            'detail': status_text,
+            'rating': serializer.data
+        })
 
 
 class UserVoteViewSet(viewsets.ModelViewSet):

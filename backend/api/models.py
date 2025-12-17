@@ -72,7 +72,7 @@ class Rating(models.Model):
     reason = models.TextField(max_length=200)
     likes = models.PositiveIntegerField(default=0)
     dislikes = models.PositiveIntegerField(default=0)
-    is_featured = models.BooleanField(default=False, verbose_name='神评')  # 管理员可标记为神评
+    is_featured = models.BooleanField(default=False, verbose_name='神评', help_text='管理员设置的优质评分，将自动置顶')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -80,7 +80,6 @@ class Rating(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['user', 'teacher', 'created_at']),
-            models.Index(fields=['is_featured', '-created_at']),
         ]
 
     def __str__(self):
@@ -133,52 +132,4 @@ class UserInteraction(models.Model):
 
     def __str__(self):
         return f'{self.user} {self.interaction_type} {self.rating}'
-
-
-class Comment(models.Model):
-    """评论模型 - 用户可以对评分进行评论"""
-    comment_id = models.AutoField(primary_key=True)
-    rating = models.ForeignKey(Rating, on_delete=models.CASCADE, related_name='comments')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='comments')
-    content = models.TextField(max_length=300, verbose_name='评论内容')
-    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies', verbose_name='父评论')
-    likes = models.PositiveIntegerField(default=0)
-    dislikes = models.PositiveIntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['rating', '-created_at']),
-            models.Index(fields=['user', '-created_at']),
-        ]
-
-    def __str__(self):
-        return f'{self.user} comment on {self.rating}'
-
-
-class CommentInteraction(models.Model):
-    """评论的点赞/点踩交互"""
-    LIKE = 'like'
-    DISLIKE = 'dislike'
-    INTERACTION_CHOICES = (
-        (LIKE, 'Like'),
-        (DISLIKE, 'Dislike'),
-    )
-
-    interaction_id = models.AutoField(primary_key=True)
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='interactions')
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='comment_interactions')
-    interaction_type = models.CharField(max_length=10, choices=INTERACTION_CHOICES)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('user', 'comment')
-        indexes = [
-            models.Index(fields=['user', 'comment']),
-        ]
-
-    def __str__(self):
-        return f'{self.user} {self.interaction_type} comment {self.comment_id}'
 

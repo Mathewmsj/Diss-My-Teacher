@@ -6,7 +6,6 @@ from .views import (
     DepartmentViewSet,
     TeacherViewSet,
     RatingViewSet,
-    CommentViewSet,
     UserVoteViewSet,
     UserInteractionViewSet,
     UserViewSet,
@@ -22,7 +21,6 @@ router.register(r'schools', SchoolViewSet)
 router.register(r'departments', DepartmentViewSet)
 router.register(r'teachers', TeacherViewSet)
 router.register(r'ratings', RatingViewSet)
-router.register(r'comments', CommentViewSet)
 router.register(r'user-votes', UserVoteViewSet)
 router.register(r'interactions', UserInteractionViewSet)
 router.register(r'users', UserViewSet)

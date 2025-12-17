@@ -219,25 +219,8 @@ export const api = {
     request(`/ratings/${id}/like/`, { method: 'POST' }),
   dislikeRating: (id) =>
     request(`/ratings/${id}/dislike/`, { method: 'POST' }),
-  setFeatured: (id, is_featured) =>
-    request(`/ratings/${id}/set_featured/`, {
-      method: 'POST',
-      body: JSON.stringify({ is_featured }),
-    }),
-  // Comment 相关
-  getComments: (ratingId) => request(`/comments/?rating=${ratingId}`),
-  getAllComments: () => request('/comments/'),
-  postComment: (data) =>
-    request('/comments/', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-  deleteComment: (id) =>
-    request(`/comments/${id}/`, { method: 'DELETE' }),
-  likeComment: (id) =>
-    request(`/comments/${id}/like/`, { method: 'POST' }),
-  dislikeComment: (id) =>
-    request(`/comments/${id}/dislike/`, { method: 'POST' }),
+  toggleFeatured: (id) =>
+    request(`/ratings/${id}/toggle_featured/`, { method: 'POST' }),
   // 超级管理员接口
   loginSuperAdmin: (username, password) =>
     request('/superadmin-login/', {
