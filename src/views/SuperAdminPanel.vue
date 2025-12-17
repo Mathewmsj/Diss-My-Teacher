@@ -269,6 +269,9 @@
         <el-form-item label="用户名">
           <el-input v-model="userForm.username" />
         </el-form-item>
+        <el-form-item label="真实姓名">
+          <el-input v-model="userForm.real_name" placeholder="请输入真实姓名" />
+        </el-form-item>
         <el-form-item label="邮箱">
           <el-input v-model="userForm.email" />
         </el-form-item>
@@ -440,6 +443,7 @@ export default {
       },
       userForm: {
         username: '',
+        real_name: '',
         email: '',
         school_code: '',
         password: '',
@@ -592,6 +596,7 @@ export default {
     openEditUserDialog(user) {
       this.userForm = {
         username: user.username,
+        real_name: user.real_name || '',
         email: user.email,
         school_code: user.school_code || '',
         password: '',

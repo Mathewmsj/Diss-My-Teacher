@@ -19,6 +19,12 @@
         <h2>{{ teacher.name }}</h2>
                 <el-tag size="large" type="info">{{ teacher.department_name || teacher.department }}</el-tag>
           </div>
+              <div class="teacher-actions" v-if="!isAdmin">
+                <el-button type="primary" size="large" @click="openRatingModal">
+                  <el-icon><Edit /></el-icon>
+                  给该老师评分
+                </el-button>
+              </div>
               <el-row :gutter="20" class="teacher-overview">
                 <el-col :span="8">
                   <el-statistic title="总分" :value="stats.totalScore" />
@@ -141,20 +147,85 @@
         </div>
       </template>
     </el-skeleton>
+
+    <!-- 评分弹窗 -->
+    <el-dialog
+      v-model="showRatingModal"
+      :title="`为 ${teacher?.name} 评分`"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <div class="rating-dialog">
+        <el-alert
+          type="warning"
+          :closable="false"
+          show-icon
+          style="margin-bottom: 20px;"
+        >
+          <template #title>
+            <span style="font-size: 0.9rem;">
+              ⚠️ 请客观、真实地表达您的评价，避免恶意和粗鲁的言论
+            </span>
+          </template>
+        </el-alert>
+        <div class="tier-selector">
+          <el-button
+            v-for="tier in tiers"
+            :key="tier"
+            :type="selectedTier === tier ? 'primary' : 'default'"
+            :class="[tier.toLowerCase(), { 'active-tier': selectedTier === tier }]"
+            size="large"
+            @click="selectedTier = tier"
+            style="flex: 1; height: 80px; font-size: 24px; font-weight: bold;"
+          >
+            {{ tier }}
+          </el-button>
+        </div>
+        <el-divider />
+        <div class="reason-input">
+          <el-form-item label="评分理由" required>
+            <el-input
+              v-model="reason"
+              type="textarea"
+              :rows="4"
+              placeholder="请详细说明评分理由，至少4字，最多50字..."
+              :maxlength="50"
+              show-word-limit
+            />
+          </el-form-item>
+          <el-alert
+            v-if="reason.length > 0 && reason.length < 4"
+            title="评分理由至少需要4个字"
+            type="warning"
+            :closable="false"
+            show-icon
+          />
+        </div>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="closeModal">取消</el-button>
+          <el-button type="primary" :disabled="!canSubmit || submitting" :loading="submitting" @click="submitRating">
+            提交评分
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import { api } from '../api'
 import { ranking } from '../utils/ranking'
-import { ArrowLeft, Star } from '@element-plus/icons-vue'
+import { ArrowLeft, Star, Edit } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 export default {
   name: 'TeacherDetail',
   components: {
     ArrowLeft,
-    Star
+    Star,
+    Edit
   },
   data() {
     return {
@@ -162,7 +233,14 @@ export default {
       ratings: [],
       loading: true,
       currentCommentIndex: 0,
-      commentTimer: null
+      commentTimer: null,
+      showRatingModal: false,
+      selectedTier: null,
+      reason: '',
+      tiers: ['T1', 'T2', 'T3'],
+      submitting: false,
+      isAdmin: false,
+      quotaTier: null
     }
   },
   computed: {
@@ -206,6 +284,7 @@ export default {
     }
   },
   mounted() {
+    this.checkAuth()
     this.loadData()
   },
   beforeUnmount() {
@@ -214,6 +293,9 @@ export default {
     }
   },
   methods: {
+    checkAuth() {
+      this.isAdmin = localStorage.getItem('isAdmin') === '1'
+    },
     async loadData() {
       this.loading = true
       try {
@@ -233,6 +315,22 @@ export default {
         
         // 启动精选评论自动滚动
         this.startCommentCarousel()
+        
+        // 如果不是管理员，加载额度信息
+        if (!this.isAdmin) {
+          try {
+            const quota = await api.getQuota()
+            if (quota && quota.T1 && quota.T2 && quota.T3) {
+              this.quotaTier = {
+                T1: quota.T1,
+                T2: quota.T2,
+                T3: quota.T3
+              }
+            }
+          } catch (err) {
+            console.error('加载额度失败', err)
+          }
+        }
       } catch (err) {
         ElMessage.error(err.message || '加载失败')
       } finally {
@@ -310,6 +408,66 @@ export default {
       if (days === 1) return '昨天'
       if (days < 7) return `${days}天前`
       return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+    },
+    openRatingModal() {
+      if (this.isAdmin) {
+        ElMessage.info('管理员不支持评分')
+        return
+      }
+      if (this.quotaTier) {
+        // 检查是否有剩余额度
+        const hasQuota = Object.values(this.quotaTier).some(tier => tier.remaining > 0)
+        if (!hasQuota) {
+          ElMessage.warning('今日额度已用完，无法继续评分')
+          return
+        }
+      }
+      this.selectedTier = null
+      this.reason = ''
+      this.showRatingModal = true
+    },
+    closeModal() {
+      this.showRatingModal = false
+      this.selectedTier = null
+      this.reason = ''
+    },
+    get canSubmit() {
+      const basic = this.selectedTier && this.reason.length >= 4 && this.reason.length <= 50
+      if (this.quotaTier && this.selectedTier) {
+        const tierQuota = this.quotaTier[this.selectedTier]
+        return basic && tierQuota && tierQuota.remaining > 0
+      }
+      return basic
+    },
+    async submitRating() {
+      if (!this.canSubmit || this.submitting) return
+      
+      if (this.quotaTier && this.selectedTier) {
+        const tierQuota = this.quotaTier[this.selectedTier]
+        if (!tierQuota || tierQuota.remaining <= 0) {
+          ElMessage.warning(`今日${this.selectedTier}等级评分次数已达上限（${tierQuota?.limit || 0}次）`)
+          return
+        }
+      }
+
+      this.submitting = true
+      try {
+        await api.postRating({
+          teacher: this.teacher.teacher_id || this.teacher.id,
+          tier: this.selectedTier,
+          reason: this.reason
+        })
+        ElMessage.success({
+          message: `评分提交成功！您为 ${this.teacher.name} 给予了 ${this.selectedTier} 评价`,
+          duration: 3000
+        })
+        this.loadData()
+        this.closeModal()
+      } catch (err) {
+        ElMessage.error(err.message || '提交失败')
+      } finally {
+        this.submitting = false
+      }
     },
     async toggleLike(rating) {
       try {
@@ -536,6 +694,62 @@ export default {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.teacher-actions {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.rating-dialog {
+  padding: 10px 0;
+}
+
+.tier-selector {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.tier-selector .el-button.t1 {
+  border-color: #4a7c8f;
+  color: #4a7c8f;
+  font-weight: 600;
+}
+
+.tier-selector .el-button.t2 {
+  border-color: #6b9fb5;
+  color: #6b9fb5;
+  font-weight: 600;
+}
+
+.tier-selector .el-button.t3 {
+  border-color: #b8a5c4;
+  color: #b8a5c4;
+  font-weight: 600;
+}
+
+.tier-selector .el-button.active-tier.t1 {
+  background-color: #4a7c8f;
+  border-color: #4a7c8f;
+  color: white;
+}
+
+.tier-selector .el-button.active-tier.t2 {
+  background-color: #6b9fb5;
+  border-color: #6b9fb5;
+  color: white;
+}
+
+.tier-selector .el-button.active-tier.t3 {
+  background-color: #b8a5c4;
+  border-color: #b8a5c4;
+  color: white;
+}
+
+.reason-input {
+  margin-top: 20px;
 }
 
 .comment-tier {

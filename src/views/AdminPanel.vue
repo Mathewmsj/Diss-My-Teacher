@@ -159,12 +159,17 @@
             <el-tag :type="row.can_rate ? 'success' : 'info'">{{ row.can_rate ? '是' : '否' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200">
+        <el-table-column label="操作" width="280">
           <template #default="{ row }">
             <div class="action-btns">
               <el-button type="warning" size="small" @click="toggleRate(row, !row.can_rate)">
                 {{ row.can_rate ? '禁用评分' : '启用评分' }}
               </el-button>
+              <el-popconfirm title="确定删除这个用户吗？" @confirm="deleteUser(row)">
+                <template #reference>
+                  <el-button type="danger" size="small">删除</el-button>
+                </template>
+              </el-popconfirm>
             </div>
           </template>
         </el-table-column>

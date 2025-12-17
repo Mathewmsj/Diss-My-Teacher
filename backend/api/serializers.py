@@ -180,12 +180,11 @@ class SignupSerializer(serializers.ModelSerializer):
         real_name = validated_data.pop('real_name', '').strip()
         if not real_name:
             raise serializers.ValidationError({'real_name': '真实姓名不能为空'})
-        school = None
-        if school_code:
-            school, _ = School.objects.get_or_create(
-                school_code=school_code,
-                defaults={'school_name': school_code}
-            )
+        # 学校代码必须已存在，不允许自动创建
+        try:
+            school = School.objects.get(school_code=school_code)
+        except School.DoesNotExist:
+            raise serializers.ValidationError({'school_code': f'学校代码 "{school_code}" 不存在，请联系管理员'})
         user = get_user_model().objects.create(
             **validated_data,
             real_name=real_name,

@@ -218,6 +218,18 @@
       :close-on-click-modal="false"
     >
       <div class="rating-dialog">
+        <el-alert
+          type="warning"
+          :closable="false"
+          show-icon
+          style="margin-bottom: 20px;"
+        >
+          <template #title>
+            <span style="font-size: 0.9rem;">
+              ⚠️ 请客观、真实地表达您的评价，避免恶意和粗鲁的言论
+            </span>
+          </template>
+        </el-alert>
         <div class="tier-selector">
           <el-button
               v-for="tier in tiers"
@@ -304,7 +316,7 @@ export default {
       currentCommentIndex: {},  // 每个老师当前显示的评论索引
       commentTimers: {},  // 每个老师的滚动定时器
       submitting: false,  // 提交中状态，防止重复提交
-      showUsageGuide: false  // 是否显示使用说明
+      showUsageGuide: true  // 是否显示使用说明（默认展开）
     }
   },
   computed: {

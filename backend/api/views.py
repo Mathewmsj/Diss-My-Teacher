@@ -13,9 +13,9 @@ from .serializers import (
     UserVoteSerializer,
     UserInteractionSerializer,
     UserSerializer,
-    SuperAdminUserSerializer,
     SignupSerializer,
     SuperAdminRatingSerializer,
+    SuperAdminUserSerializer,
 )
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
@@ -813,11 +813,21 @@ class SuperAdminViewSet(viewsets.ViewSet):
         if 'approval_status' in request.data:
             user.approval_status = request.data['approval_status']
         
+        if 'real_name' in request.data:
+            real_name = request.data['real_name'].strip() if request.data['real_name'] else ''
+            if real_name:
+                # 检查真实姓名唯一性（排除当前用户）
+                if User.objects.filter(real_name=real_name).exclude(pk=pk).exists():
+                    return Response({'detail': '真实姓名已被使用'}, status=status.HTTP_400_BAD_REQUEST)
+                user.real_name = real_name
+            else:
+                user.real_name = None
+        
         if 'password' in request.data and request.data['password']:
             user.set_password(request.data['password'])
         
         user.save()
-        serializer = UserSerializer(user)
+        serializer = SuperAdminUserSerializer(user)
         return Response(serializer.data)
 
     @action(detail=True, methods=['delete'])
