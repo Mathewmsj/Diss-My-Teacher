@@ -14,6 +14,7 @@ from .views import (
     LoginUserViewSet,
     SuperAdminLoginViewSet,
     SuperAdminViewSet,
+    CommentViewSet,
 )
 
 router = DefaultRouter()
@@ -29,6 +30,7 @@ router.register(r'signup', SignupViewSet, basename='signup')
 router.register(r'login-user', LoginUserViewSet, basename='login-user')
 router.register(r'superadmin-login', SuperAdminLoginViewSet, basename='superadmin-login')
 router.register(r'superadmin', SuperAdminViewSet, basename='superadmin')
+router.register(r'comments', CommentViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

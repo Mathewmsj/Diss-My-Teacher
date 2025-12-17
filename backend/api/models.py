@@ -132,3 +132,52 @@ class UserInteraction(models.Model):
     def __str__(self):
         return f'{self.user} {self.interaction_type} {self.rating}'
 
+
+class Comment(models.Model):
+    """评论模型：用户对评分的评论，支持追评"""
+    comment_id = models.AutoField(primary_key=True)
+    rating = models.ForeignKey(Rating, on_delete=models.CASCADE, related_name='comments')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='comments')
+    content = models.TextField(max_length=500)
+    parent_comment = models.ForeignKey('self', on_delete=models.CASCADE, related_name='replies', null=True, blank=True)
+    likes = models.PositiveIntegerField(default=0)
+    dislikes = models.PositiveIntegerField(default=0)
+    is_featured = models.BooleanField(default=False, verbose_name='神评')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-is_featured', '-created_at']
+        indexes = [
+            models.Index(fields=['rating', 'parent_comment']),
+            models.Index(fields=['is_featured', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.user.username}: {self.content[:30]}'
+
+
+class CommentInteraction(models.Model):
+    """评论互动模型：用户对评论的点赞/点踩"""
+    LIKE = 'like'
+    DISLIKE = 'dislike'
+    INTERACTION_CHOICES = (
+        (LIKE, 'Like'),
+        (DISLIKE, 'Dislike'),
+    )
+
+    interaction_id = models.AutoField(primary_key=True)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='interactions')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='comment_interactions')
+    interaction_type = models.CharField(max_length=10, choices=INTERACTION_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'comment')
+        indexes = [
+            models.Index(fields=['user', 'comment']),
+        ]
+
+    def __str__(self):
+        return f'{self.user} {self.interaction_type} comment {self.comment.comment_id}'
+

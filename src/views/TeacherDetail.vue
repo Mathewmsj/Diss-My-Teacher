@@ -129,17 +129,158 @@
               <div class="rating-votes">
                 <el-button
                   :type="rating.userLiked ? 'success' : 'default'"
-                  @click="toggleLike(rating)"
+                  @click.stop="toggleLike(rating)"
+                  size="small"
                 >
                   👍 {{ rating.likes || 0 }}
                 </el-button>
                 <el-button
                   :type="rating.userDisliked ? 'warning' : 'default'"
-                  @click="toggleDislike(rating)"
+                  @click.stop="toggleDislike(rating)"
+                  size="small"
                 >
                   👎 {{ rating.dislikes || 0 }}
                 </el-button>
+                <el-button
+                  type="default"
+                  @click.stop="toggleComments(rating)"
+                  size="small"
+                >
+                  💬 评论 ({{ rating.commentsCount || 0 }})
+                </el-button>
               </div>
+                </div>
+
+                <!-- 评论区 -->
+                <div v-if="rating.showComments" class="comments-section" @click.stop>
+                  <el-divider style="margin: 12px 0;" />
+                  
+                  <!-- 发表评论 -->
+                  <div class="comment-input" v-if="!isAdmin">
+                    <el-input
+                      v-model="rating.newComment"
+                      type="textarea"
+                      :rows="2"
+                      placeholder="发表评论..."
+                      maxlength="500"
+                      show-word-limit
+                    />
+                    <div class="comment-input-actions">
+                      <el-button
+                        type="primary"
+                        size="small"
+                        @click="postComment(rating)"
+                        :disabled="!rating.newComment || rating.newComment.trim().length < 2"
+                      >
+                        发表
+                      </el-button>
+                    </div>
+                  </div>
+
+                  <!-- 评论列表 -->
+                  <div class="comments-list">
+                    <el-empty v-if="!rating.comments || rating.comments.length === 0" description="暂无评论" :image-size="60" />
+                    <div v-else>
+                      <div
+                        v-for="comment in rating.comments"
+                        :key="comment.comment_id"
+                        class="comment-item"
+                        :class="{ 'featured-comment': comment.is_featured }"
+                      >
+                        <div class="comment-header">
+                          <span class="comment-user">{{ comment.user_name }}</span>
+                          <el-tag v-if="comment.is_featured" type="danger" size="small" effect="dark">神评</el-tag>
+                          <span class="comment-time">{{ formatDateShort(comment.created_at) }}</span>
+                          <el-button
+                            v-if="isAdmin"
+                            type="warning"
+                            size="small"
+                            @click="toggleFeatured(rating, comment)"
+                          >
+                            {{ comment.is_featured ? '取消神评' : '设为神评' }}
+                          </el-button>
+                        </div>
+                        <div class="comment-content">{{ comment.content }}</div>
+                        <div class="comment-actions">
+                          <el-button
+                            :type="comment.user_liked ? 'success' : 'default'"
+                            size="small"
+                            @click="likeComment(rating, comment)"
+                          >
+                            👍 {{ comment.likes || 0 }}
+                          </el-button>
+                          <el-button
+                            :type="comment.user_disliked ? 'warning' : 'default'"
+                            size="small"
+                            @click="dislikeComment(rating, comment)"
+                          >
+                            👎 {{ comment.dislikes || 0 }}
+                          </el-button>
+                          <el-button
+                            type="default"
+                            size="small"
+                            @click="showReplyInput(rating, comment)"
+                          >
+                            回复 ({{ comment.replies_count || 0 }})
+                          </el-button>
+                        </div>
+
+                        <!-- 回复输入框 -->
+                        <div v-if="comment.showReplyInput" class="reply-input">
+                          <el-input
+                            v-model="comment.replyContent"
+                            type="textarea"
+                            :rows="2"
+                            placeholder="回复评论..."
+                            maxlength="500"
+                            show-word-limit
+                          />
+                          <div class="reply-input-actions">
+                            <el-button
+                              type="primary"
+                              size="small"
+                              @click="postReply(rating, comment)"
+                              :disabled="!comment.replyContent || comment.replyContent.trim().length < 2"
+                            >
+                              回复
+                            </el-button>
+                            <el-button size="small" @click="comment.showReplyInput = false">取消</el-button>
+                          </div>
+                        </div>
+
+                        <!-- 回复列表 -->
+                        <div v-if="comment.replies && comment.replies.length > 0" class="replies-list">
+                          <div
+                            v-for="reply in comment.replies"
+                            :key="reply.comment_id"
+                            class="reply-item"
+                          >
+                            <div class="reply-header">
+                              <span class="reply-user">{{ reply.user_name }}</span>
+                              <span class="reply-time">{{ formatDateShort(reply.created_at) }}</span>
+                            </div>
+                            <div class="reply-content">{{ reply.content }}</div>
+                            <div class="reply-actions">
+                              <el-button
+                                :type="reply.user_liked ? 'success' : 'default'"
+                                size="small"
+                                @click="likeComment(rating, reply)"
+                              >
+                                👍 {{ reply.likes || 0 }}
+                              </el-button>
+                              <el-button
+                                :type="reply.user_disliked ? 'warning' : 'default'"
+                                size="small"
+                                @click="dislikeComment(rating, reply)"
+                              >
+                                👎 {{ reply.dislikes || 0 }}
+                              </el-button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </el-card>
             </div>
@@ -273,6 +414,13 @@ export default {
     sortedRatings() {
       return this.ratings
         .filter(r => (r.teacherId || r.teacher) === this.teacherId)
+        .map(r => ({
+          ...r,
+          showComments: r.showComments || false,
+          newComment: r.newComment || '',
+          comments: r.comments || [],
+          commentsCount: r.commentsCount || 0
+        }))
         .sort((a, b) => {
           const scoreA = (a.likes || 0) - (a.dislikes || 0)
           const scoreB = (b.likes || 0) - (b.dislikes || 0)
@@ -467,6 +615,93 @@ export default {
         ElMessage.error(err.message || '提交失败')
       } finally {
         this.submitting = false
+      }
+    },
+    async toggleComments(rating) {
+      rating.showComments = !rating.showComments
+      if (rating.showComments && (!rating.comments || rating.comments.length === 0)) {
+        await this.loadComments(rating)
+      }
+    },
+    async loadComments(rating) {
+      try {
+        const comments = await api.getComments(rating.id)
+        rating.comments = comments.map(c => ({
+          ...c,
+          showReplyInput: false,
+          replyContent: ''
+        }))
+        rating.commentsCount = comments.length
+      } catch (err) {
+        ElMessage.error('加载评论失败')
+      }
+    },
+    async postComment(rating) {
+      const content = rating.newComment.trim()
+      if (content.length < 2) {
+        ElMessage.warning('评论至少需要2个字')
+        return
+      }
+      try {
+        await api.postComment({
+          rating: rating.id,
+          content: content
+        })
+        ElMessage.success('评论成功')
+        rating.newComment = ''
+        await this.loadComments(rating)
+      } catch (err) {
+        ElMessage.error(err.message || '评论失败')
+      }
+    },
+    showReplyInput(rating, comment) {
+      comment.showReplyInput = !comment.showReplyInput
+    },
+    async postReply(rating, comment) {
+      const content = comment.replyContent.trim()
+      if (content.length < 2) {
+        ElMessage.warning('回复至少需要2个字')
+        return
+      }
+      try {
+        await api.postComment({
+          rating: rating.id,
+          content: content,
+          parent_comment: comment.comment_id
+        })
+        ElMessage.success('回复成功')
+        comment.replyContent = ''
+        comment.showReplyInput = false
+        await this.loadComments(rating)
+      } catch (err) {
+        ElMessage.error(err.message || '回复失败')
+      }
+    },
+    async likeComment(rating, comment) {
+      try {
+        const updated = await api.likeComment(comment.comment_id)
+        Object.assign(comment, updated)
+      } catch (err) {
+        ElMessage.error('操作失败')
+      }
+    },
+    async dislikeComment(rating, comment) {
+      try {
+        const updated = await api.dislikeComment(comment.comment_id)
+        Object.assign(comment, updated)
+      } catch (err) {
+        ElMessage.error('操作失败')
+      }
+    },
+    async toggleFeatured(rating, comment) {
+      try {
+        const updated = await api.setFeaturedComment(comment.comment_id, !comment.is_featured)
+        Object.assign(comment, updated)
+        ElMessage.success(updated.is_featured ? '已设为神评' : '已取消神评')
+        // 重新加载评论以更新排序
+        await this.loadComments(rating)
+      } catch (err) {
+        ElMessage.error(err.message || '操作失败')
       }
     },
     async toggleLike(rating) {
@@ -923,5 +1158,128 @@ export default {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+/* 评论区样式 */
+.comments-section {
+  margin-top: 16px;
+  padding-top: 12px;
+}
+
+.comment-input {
+  margin-bottom: 16px;
+}
+
+.comment-input-actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.comments-list {
+  margin-top: 16px;
+}
+
+.comment-item {
+  padding: 12px;
+  background-color: var(--el-fill-color-lighter);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+}
+
+.comment-item:hover {
+  background-color: var(--el-fill-color-light);
+}
+
+.featured-comment {
+  border: 2px solid var(--el-color-danger);
+  background-color: rgba(255, 77, 79, 0.05);
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+
+.comment-user {
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.comment-time {
+  color: var(--el-text-color-secondary);
+  font-size: 0.8rem;
+}
+
+.comment-content {
+  margin-bottom: 8px;
+  line-height: 1.6;
+  color: var(--el-text-color-regular);
+}
+
+.comment-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.reply-input {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--el-border-color-lighter);
+}
+
+.reply-input-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.replies-list {
+  margin-top: 12px;
+  padding-left: 24px;
+  border-left: 2px solid var(--el-border-color-light);
+}
+
+.reply-item {
+  padding: 10px;
+  background-color: var(--el-bg-color);
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.reply-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+}
+
+.reply-user {
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.reply-time {
+  color: var(--el-text-color-secondary);
+  font-size: 0.75rem;
+}
+
+.reply-content {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--el-text-color-regular);
+  margin-bottom: 6px;
+}
+
+.reply-actions {
+  display: flex;
+  gap: 8px;
 }
 </style>

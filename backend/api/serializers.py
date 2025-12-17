@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from .models import School, Department, Teacher, Rating, UserVote, UserInteraction
+from .models import School, Department, Teacher, Rating, UserVote, UserInteraction, Comment, CommentInteraction
 
 
 class SchoolSerializer(serializers.ModelSerializer):
@@ -197,4 +197,48 @@ class SignupSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    """评论序列化器"""
+    user_name = serializers.CharField(source='user.username', read_only=True)
+    user_liked = serializers.SerializerMethodField()
+    user_disliked = serializers.SerializerMethodField()
+    replies_count = serializers.SerializerMethodField()
+    replies = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Comment
+        fields = ['comment_id', 'rating', 'user', 'user_name', 'content', 'parent_comment',
+                  'likes', 'dislikes', 'is_featured', 'user_liked', 'user_disliked',
+                  'replies_count', 'replies', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'likes', 'dislikes', 'is_featured', 'created_at', 'updated_at']
+
+    def get_user_liked(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return CommentInteraction.objects.filter(
+                comment=obj,
+                user=request.user,
+                interaction_type=CommentInteraction.LIKE
+            ).exists()
+        return False
+
+    def get_user_disliked(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return CommentInteraction.objects.filter(
+                comment=obj,
+                user=request.user,
+                interaction_type=CommentInteraction.DISLIKE
+            ).exists()
+        return False
+
+    def get_replies_count(self, obj):
+        return obj.replies.count()
+
+    def get_replies(self, obj):
+        # 只返回直接回复，最多5条
+        replies = obj.replies.all()[:5]
+        return CommentSerializer(replies, many=True, context=self.context).data
 

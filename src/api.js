@@ -271,4 +271,24 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ new_school_code: newCode }),
     }),
+
+  // 评论相关
+  getComments: (ratingId) =>
+    request(`/comments/?rating=${ratingId}`),
+  postComment: (data) =>
+    request('/comments/', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+  likeComment: (id) =>
+    request(`/comments/${id}/like/`, { method: 'POST' }),
+  dislikeComment: (id) =>
+    request(`/comments/${id}/dislike/`, { method: 'POST' }),
+  setFeaturedComment: (id, isFeatured) =>
+    request(`/comments/${id}/set_featured/`, {
+      method: 'POST',
+      body: JSON.stringify({ is_featured: isFeatured })
+    }),
+  deleteComment: (id) =>
+    request(`/comments/${id}/`, { method: 'DELETE' })
 };
