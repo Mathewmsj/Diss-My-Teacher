@@ -1,5 +1,6 @@
 from django.contrib import admin
-from django.http import JsonResponse
+import os
+from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import path, include
 from rest_framework.authtoken.views import obtain_auth_token
 
@@ -10,19 +11,16 @@ def healthz(_request):
 
 
 def root(_request):
-    # 根路径返回说明，避免 404
-    return JsonResponse({
-        "message": "Diss My Teacher API",
-        "docs": "/api/",
-        "health": "/healthz"
-    })
+    # 根路径重定向到前端域名
+    frontend_url = os.getenv('FRONTEND_URL', 'https://diss-my-teachers.onrender.com')
+    return HttpResponseRedirect(frontend_url)
 
 
 urlpatterns = [
-    path('', root),
-    path('admin/', admin.site.urls),
+    path('admin/', admin.site.urls),  # /admin 显示 Django 后台
     path('api/token-auth/', obtain_auth_token),
     path('api/', include('api.urls')),
     path('healthz', healthz),  # Render 健康检查使用
+    path('', root),  # 根路径重定向到前端（放在最后，避免覆盖其他路径）
 ]
 
