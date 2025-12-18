@@ -343,7 +343,7 @@ export default {
               }
             }
           } catch (err) {
-            console.error('加载额度失败', err)
+            console.error('加载额度失败')
           }
         }
       } catch (err) {
@@ -522,7 +522,7 @@ export default {
         ElMessage.success(result.detail || (rating.is_featured ? '已取消神评' : '已设为神评'))
         await this.loadData()
       } catch (err) {
-        console.error('设置神评失败:', err)
+        console.error('设置神评失败')
         ElMessage.error(err.message || '操作失败，请检查您是否有管理员权限')
       }
     }

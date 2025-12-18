@@ -27,6 +27,24 @@ class TeacherSerializer(serializers.ModelSerializer):
 
 
 
+class RatingSerializer(serializers.ModelSerializer):
+    """评分序列化器 - 不包含任何用户名等敏感信息，只返回匿名ID"""
+    teacher_name = serializers.CharField(source='teacher.name', read_only=True)
+    masked_user_id = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Rating
+        fields = [
+            'rating_id', 'teacher', 'teacher_name', 'masked_user_id',
+            'tier', 'reason', 'likes', 'dislikes', 'is_featured', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['likes', 'dislikes', 'is_featured', 'created_at', 'updated_at']
+
+    def get_masked_user_id(self, obj):
+        """返回匿名用户ID，不暴露真实用户信息"""
+        return f'anon-{obj.user_id}'
+
+
 class UserVoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserVote
