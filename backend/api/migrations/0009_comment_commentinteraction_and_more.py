@@ -5,6 +5,95 @@ from django.db import migrations, models
 import django.db.models.deletion
 
 
+def create_comment_models_if_not_exist(apps, schema_editor):
+    """安全地创建 Comment 和 CommentInteraction 模型（如果不存在）"""
+    db = schema_editor.connection.alias
+    with schema_editor.connection.cursor() as cursor:
+        # 检查 Comment 表是否已存在
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'api_comment'
+            );
+        """)
+        comment_exists = cursor.fetchone()[0]
+        
+        # 检查 CommentInteraction 表是否已存在
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'api_commentinteraction'
+            );
+        """)
+        interaction_exists = cursor.fetchone()[0]
+        
+        # 如果表已存在，跳过创建
+        if comment_exists and interaction_exists:
+            return
+    
+    # 如果表不存在，使用 Django 的标准方式创建
+    with schema_editor.connection.cursor() as cursor:
+        if not comment_exists:
+            # 创建 Comment 表
+            cursor.execute("""
+                CREATE TABLE api_comment (
+                    comment_id SERIAL PRIMARY KEY,
+                    content TEXT NOT NULL,
+                    likes INTEGER NOT NULL DEFAULT 0,
+                    dislikes INTEGER NOT NULL DEFAULT 0,
+                    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                    parent_id INTEGER,
+                    rating_id INTEGER NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    FOREIGN KEY (parent_id) REFERENCES api_comment(comment_id) ON DELETE CASCADE,
+                    FOREIGN KEY (rating_id) REFERENCES api_rating(rating_id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES api_user(id) ON DELETE CASCADE
+                );
+            """)
+            
+            # 创建索引
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS api_comment_rating__76748d_idx 
+                ON api_comment (rating_id, created_at DESC);
+            """)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS api_comment_user_id_86e7b0_idx 
+                ON api_comment (user_id, created_at DESC);
+            """)
+        
+        if not interaction_exists:
+            # 创建 CommentInteraction 表
+            cursor.execute("""
+                CREATE TABLE api_commentinteraction (
+                    interaction_id SERIAL PRIMARY KEY,
+                    interaction_type VARCHAR(10) NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                    comment_id INTEGER NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    FOREIGN KEY (comment_id) REFERENCES api_comment(comment_id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES api_user(id) ON DELETE CASCADE,
+                    UNIQUE (user_id, comment_id)
+                );
+            """)
+            
+            # 创建索引
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS api_comment_user_id_86cabe_idx 
+                ON api_commentinteraction (user_id, comment_id);
+            """)
+
+
+def reverse_create_comment_models(apps, schema_editor):
+    """反向操作：删除表"""
+    db = schema_editor.connection.alias
+    with schema_editor.connection.cursor() as cursor:
+        cursor.execute("DROP TABLE IF EXISTS api_commentinteraction CASCADE;")
+        cursor.execute("DROP TABLE IF EXISTS api_comment CASCADE;")
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -12,43 +101,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='Comment',
-            fields=[
-                ('comment_id', models.AutoField(primary_key=True, serialize=False)),
-                ('content', models.TextField(max_length=300, verbose_name='评论内容')),
-                ('likes', models.PositiveIntegerField(default=0)),
-                ('dislikes', models.PositiveIntegerField(default=0)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='replies', to='api.comment', verbose_name='父评论')),
-                ('rating', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='comments', to='api.rating')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='comments', to=settings.AUTH_USER_MODEL)),
-            ],
-            options={
-                'ordering': ['-created_at'],
-            },
-        ),
-        migrations.CreateModel(
-            name='CommentInteraction',
-            fields=[
-                ('interaction_id', models.AutoField(primary_key=True, serialize=False)),
-                ('interaction_type', models.CharField(choices=[('like', 'Like'), ('dislike', 'Dislike')], max_length=10)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('comment', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='interactions', to='api.comment')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='comment_interactions', to=settings.AUTH_USER_MODEL)),
-            ],
-            options={
-                'indexes': [models.Index(fields=['user', 'comment'], name='api_comment_user_id_86cabe_idx')],
-                'unique_together': {('user', 'comment')},
-            },
-        ),
-        migrations.AddIndex(
-            model_name='comment',
-            index=models.Index(fields=['rating', '-created_at'], name='api_comment_rating__76748d_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='comment',
-            index=models.Index(fields=['user', '-created_at'], name='api_comment_user_id_86e7b0_idx'),
+        # 使用 RunPython 安全地创建 Comment 相关模型
+        migrations.RunPython(
+            create_comment_models_if_not_exist,
+            reverse_create_comment_models,
         ),
     ]
