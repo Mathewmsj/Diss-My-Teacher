@@ -79,9 +79,9 @@ export default {
             if (res.token) {
               localStorage.setItem('authToken', res.token)
             }
-            ElMessage.success('登录成功')
+          ElMessage.success('登录成功')
             this.$router.push('/')
-          } else {
+        } else {
             res = await api.loginUser(this.form.identifier, this.form.password)
             localStorage.removeItem('isAdmin')
             localStorage.removeItem('isSuperAdmin')

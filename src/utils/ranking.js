@@ -198,7 +198,7 @@ export const ranking = {
         }
       }
     })
-    
+
     // 计算最终分数：TF-IDF思想 + 权重
     const totalDocs = validRatings.length
     const candidates = Object.entries(wordStats)
