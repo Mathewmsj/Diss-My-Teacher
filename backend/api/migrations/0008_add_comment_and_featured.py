@@ -3,47 +3,6 @@
 from django.db import migrations, models
 
 
-def remove_comment_models_if_exist(apps, schema_editor):
-    """安全地删除 Comment 和 CommentInteraction 模型（如果存在）"""
-    db = schema_editor.connection.alias
-    try:
-        Comment = apps.get_model('api', 'Comment')
-        CommentInteraction = apps.get_model('api', 'CommentInteraction')
-        
-        # 检查表是否存在
-        with schema_editor.connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_schema = 'public' 
-                    AND table_name = 'api_comment'
-                );
-            """)
-            comment_exists = cursor.fetchone()[0]
-            
-            cursor.execute("""
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_schema = 'public' 
-                    AND table_name = 'api_commentinteraction'
-                );
-            """)
-            interaction_exists = cursor.fetchone()[0]
-            
-            if comment_exists:
-                cursor.execute("DROP TABLE IF EXISTS api_comment CASCADE;")
-            if interaction_exists:
-                cursor.execute("DROP TABLE IF EXISTS api_commentinteraction CASCADE;")
-    except Exception:
-        # 如果模型不存在，忽略错误
-        pass
-
-
-def reverse_remove_comment_models(apps, schema_editor):
-    """反向操作：不恢复已删除的模型"""
-    pass
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -51,7 +10,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # 先添加 is_featured 字段到 Rating
+        # 只添加 is_featured 字段到 Rating
+        # 不删除 Comment 模型，因为 0009 会重新创建它们
         migrations.AddField(
             model_name='rating',
             name='is_featured',
@@ -60,10 +20,5 @@ class Migration(migrations.Migration):
         migrations.AddIndex(
             model_name='rating',
             index=models.Index(fields=['is_featured', '-created_at'], name='api_rating_is_feat_4c18c0_idx'),
-        ),
-        # 使用 RunPython 安全地删除 Comment 相关模型
-        migrations.RunPython(
-            remove_comment_models_if_exist,
-            reverse_remove_comment_models,
         ),
     ]
