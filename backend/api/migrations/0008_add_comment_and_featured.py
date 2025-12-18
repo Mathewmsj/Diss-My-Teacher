@@ -3,6 +3,57 @@
 from django.db import migrations, models
 
 
+def add_is_featured_if_not_exists(apps, schema_editor):
+    """安全地添加 is_featured 字段（如果不存在）"""
+    db = schema_editor.connection.alias
+    with schema_editor.connection.cursor() as cursor:
+        # 检查字段是否已存在
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_schema = 'public' 
+                AND table_name = 'api_rating' 
+                AND column_name = 'is_featured'
+            );
+        """)
+        field_exists = cursor.fetchone()[0]
+        
+        if not field_exists:
+            # 添加字段
+            cursor.execute("""
+                ALTER TABLE api_rating 
+                ADD COLUMN is_featured BOOLEAN NOT NULL DEFAULT FALSE;
+            """)
+        
+        # 检查索引是否已存在
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM pg_indexes 
+                WHERE schemaname = 'public' 
+                AND tablename = 'api_rating' 
+                AND indexname = 'api_rating_is_feat_4c18c0_idx'
+            );
+        """)
+        index_exists = cursor.fetchone()[0]
+        
+        if not index_exists:
+            # 添加索引
+            cursor.execute("""
+                CREATE INDEX api_rating_is_feat_4c18c0_idx 
+                ON api_rating (is_featured, created_at DESC);
+            """)
+
+
+def reverse_add_is_featured(apps, schema_editor):
+    """反向操作：删除字段和索引"""
+    db = schema_editor.connection.alias
+    with schema_editor.connection.cursor() as cursor:
+        # 删除索引
+        cursor.execute("DROP INDEX IF EXISTS api_rating_is_feat_4c18c0_idx;")
+        # 删除字段
+        cursor.execute("ALTER TABLE api_rating DROP COLUMN IF EXISTS is_featured;")
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,15 +61,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # 只添加 is_featured 字段到 Rating
-        # 不删除 Comment 模型，因为 0009 会重新创建它们
-        migrations.AddField(
-            model_name='rating',
-            name='is_featured',
-            field=models.BooleanField(default=False, verbose_name='神评'),
-        ),
-        migrations.AddIndex(
-            model_name='rating',
-            index=models.Index(fields=['is_featured', '-created_at'], name='api_rating_is_feat_4c18c0_idx'),
+        # 使用 RunPython 安全地添加 is_featured 字段
+        migrations.RunPython(
+            add_is_featured_if_not_exists,
+            reverse_add_is_featured,
         ),
     ]
