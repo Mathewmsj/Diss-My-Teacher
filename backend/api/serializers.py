@@ -25,30 +25,6 @@ class TeacherSerializer(serializers.ModelSerializer):
         fields = ['teacher_id', 'name', 'department', 'department_name', 'school', 'school_code', 'created_at']
 
 
-class RatingSerializer(serializers.ModelSerializer):
-    user_name = serializers.CharField(source='user.username', read_only=True)
-    teacher_name = serializers.CharField(source='teacher.name', read_only=True)
-    masked_user_id = serializers.SerializerMethodField(read_only=True)
-
-    class Meta:
-        model = Rating
-        fields = [
-            'rating_id', 'teacher', 'teacher_name', 'user', 'user_name', 'masked_user_id',
-            'tier', 'reason', 'likes', 'dislikes', 'is_featured', 'created_at', 'updated_at'
-        ]
-        read_only_fields = ['likes', 'dislikes', 'is_featured', 'created_at', 'updated_at', 'user']
-
-    def get_masked_user_id(self, obj):
-        return f'anon-{obj.user_id}'
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        request = self.context.get('request')
-        # 对非管理员隐藏真实用户信息，保留匿名标识
-        if request and not request.user.is_staff:
-            data.pop('user', None)
-            data.pop('user_name', None)
-        return data
 
 
 class UserVoteSerializer(serializers.ModelSerializer):
