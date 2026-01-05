@@ -75,17 +75,35 @@ if [ -f "$VENV_PATH/bin/activate" ]; then
     source "$VENV_PATH/bin/activate"
     echo "✅ 虚拟环境已激活"
     
+    # 检查 Python 版本
+    PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null || echo "unknown")
+    echo "Python 版本: $PYTHON_VERSION"
+    
     # 检查 Django 是否安装
     if ! python3 -c "import django" 2>/dev/null; then
         echo "Django 未安装，正在安装依赖..."
         pip install -q --upgrade pip
-        pip install -q -r requirements.txt
+        
+        # 根据 Python 版本选择 requirements 文件
+        if [ -f "requirements-compat.txt" ]; then
+            echo "尝试使用兼容版本的依赖文件..."
+            if pip install -q -r requirements-compat.txt 2>/dev/null; then
+                echo "✅ 使用兼容版本依赖安装成功"
+            else
+                echo "⚠️  兼容版本安装失败，尝试使用默认 requirements.txt..."
+                pip install -q -r requirements.txt || {
+                    echo "❌ 依赖安装失败，请检查 Python 版本（需要 Python 3.8+ 或使用兼容版本）"
+                    exit 1
+                }
+            fi
+        else
+            pip install -q -r requirements.txt || {
+                echo "❌ 依赖安装失败，请检查 Python 版本（需要 Python 3.8+）"
+                exit 1
+            }
+        fi
     else
         echo "✅ Django 已安装"
-        # 更新依赖以确保最新
-        echo "更新依赖..."
-        pip install -q --upgrade pip
-        pip install -q -r requirements.txt
     fi
     
     # 执行数据库迁移
@@ -121,7 +139,27 @@ fi
 if ! python3 -c "import django" 2>/dev/null; then
     echo "❌ Django 未安装，正在安装..."
     pip install -q --upgrade pip
-    pip install -q -r requirements.txt
+    
+    # 根据 Python 版本选择 requirements 文件
+    if [ -f "requirements-compat.txt" ]; then
+        echo "尝试使用兼容版本的依赖文件..."
+        if pip install -q -r requirements-compat.txt 2>/dev/null; then
+            echo "✅ 使用兼容版本依赖安装成功"
+        else
+            echo "⚠️  兼容版本安装失败，尝试使用默认 requirements.txt..."
+            pip install -q -r requirements.txt || {
+                echo "❌ 依赖安装失败"
+                cd ..
+                exit 1
+            }
+        fi
+    else
+        pip install -q -r requirements.txt || {
+            echo "❌ 依赖安装失败"
+            cd ..
+            exit 1
+        }
+    fi
 fi
 
 # 先测试一下能否正常启动
@@ -130,7 +168,15 @@ python3 manage.py check || {
     echo "❌ Django 配置检查失败"
     echo "尝试重新安装依赖..."
     pip install -q --upgrade pip
-    pip install -q -r requirements.txt
+    
+    # 尝试使用兼容版本
+    if [ -f "requirements-compat.txt" ]; then
+        echo "尝试使用兼容版本的依赖文件..."
+        pip install -q -r requirements-compat.txt || pip install -q -r requirements.txt
+    else
+        pip install -q -r requirements.txt
+    fi
+    
     python3 manage.py check || {
         echo "❌ Django 配置检查仍然失败"
         cd ..
