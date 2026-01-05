@@ -2,12 +2,12 @@
 
 # 启动脚本 - Rate My Teacher 应用
 # 使用方法: ./start.sh [backend_port] [frontend_port]
-# 示例: ./start.sh 5000 5001  (直接IP访问，端口范围5000-5010)
+# 示例: ./start.sh 5007 5008  (直接IP访问，端口范围5000-5010)
 # 示例: ./start.sh 8806 8807  (域名访问，mathew的端口是8806)
 
 # 获取端口参数（如果未提供，使用默认值）
-BACKEND_PORT=${1:-5000}
-FRONTEND_PORT=${2:-5001}
+BACKEND_PORT=${1:-5007}
+FRONTEND_PORT=${2:-5008}
 
 echo "=========================================="
 echo "Rate My Teacher 启动脚本"

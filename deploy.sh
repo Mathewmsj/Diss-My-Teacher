@@ -3,12 +3,11 @@
 # 自动化部署脚本
 # 使用方法: ./deploy.sh [backend_port] [frontend_port]
 
-# 不立即退出，允许错误处理
-set +e
+set -e  # 遇到错误立即退出
 
 # 获取端口参数（如果未提供，使用默认值）
-BACKEND_PORT=${1:-5000}
-FRONTEND_PORT=${2:-5001}
+BACKEND_PORT=${1:-5007}
+FRONTEND_PORT=${2:-5008}
 
 echo "=========================================="
 echo "自动化部署脚本"
@@ -73,42 +72,10 @@ else
     source backend-env/bin/activate
 fi
 
-# 检测 Python 版本并选择合适的 requirements 文件
-echo "检测 Python 版本..."
-PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))' 2>/dev/null || echo "unknown")
-PYTHON_MAJOR=$(python3 -c 'import sys; print(sys.version_info[0])' 2>/dev/null || echo "3")
-PYTHON_MINOR=$(python3 -c 'import sys; print(sys.version_info[1])' 2>/dev/null || echo "6")
-
-echo "Python 版本: $PYTHON_VERSION"
-
 # 安装 Python 依赖
 echo "安装 Python 依赖..."
-pip install -q --upgrade pip 2>/dev/null || pip install --upgrade pip
-
-# 先尝试使用兼容版本（适用于旧 Python）
-if [ -f "requirements-compat.txt" ]; then
-    echo "尝试使用兼容版本的依赖文件..."
-    if pip install -q -r requirements-compat.txt 2>/dev/null; then
-        echo "✅ 使用兼容版本依赖安装成功"
-    else
-        echo "⚠️  兼容版本安装失败，尝试使用默认 requirements.txt..."
-        if pip install -r requirements.txt 2>/dev/null; then
-            echo "✅ 使用默认依赖安装成功"
-        else
-            echo "❌ 依赖安装失败，请检查 Python 版本和网络连接"
-            echo "提示: 如果 Python 版本 < 3.8，请确保 requirements-compat.txt 存在"
-            exit 1
-        fi
-    fi
-else
-    echo "使用默认 requirements.txt..."
-    if pip install -q -r requirements.txt 2>/dev/null; then
-        echo "✅ 依赖安装成功"
-    else
-        echo "❌ 依赖安装失败，请检查 Python 版本和网络连接"
-        exit 1
-    fi
-fi
+pip install -q --upgrade pip
+pip install -q -r requirements.txt
 
 # 执行数据库迁移
 echo "执行数据库迁移..."
@@ -173,4 +140,5 @@ echo ""
 echo "停止服务："
 echo "  ./stop.sh"
 echo "=========================================="
+
 
