@@ -77,6 +77,8 @@ if [ -f "$VENV_PATH/bin/activate" ]; then
     
     # 检查 Python 版本
     PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null || echo "unknown")
+    PYTHON_MAJOR=$(python3 -c "import sys; print(sys.version_info.major)" 2>/dev/null || echo "3")
+    PYTHON_MINOR=$(python3 -c "import sys; print(sys.version_info.minor)" 2>/dev/null || echo "6")
     echo "Python 版本: $PYTHON_VERSION"
     
     # 检查 Django 是否安装
@@ -84,23 +86,22 @@ if [ -f "$VENV_PATH/bin/activate" ]; then
         echo "Django 未安装，正在安装依赖..."
         pip install -q --upgrade pip
         
-        # 根据 Python 版本选择 requirements 文件
-        if [ -f "requirements-compat.txt" ]; then
-            echo "尝试使用兼容版本的依赖文件..."
-            if pip install -q -r requirements-compat.txt 2>/dev/null; then
-                echo "✅ 使用兼容版本依赖安装成功"
-            else
-                echo "⚠️  兼容版本安装失败，尝试使用默认 requirements.txt..."
-                pip install -q -r requirements.txt || {
-                    echo "❌ 依赖安装失败，请检查 Python 版本（需要 Python 3.8+ 或使用兼容版本）"
-                    exit 1
-                }
-            fi
-        else
+        # Python 3.8+ 使用标准 requirements.txt，否则使用兼容版本
+        if [ "$PYTHON_MAJOR" -ge 3 ] && [ "$PYTHON_MINOR" -ge 8 ]; then
+            echo "Python 3.8+  detected，使用标准依赖文件..."
             pip install -q -r requirements.txt || {
-                echo "❌ 依赖安装失败，请检查 Python 版本（需要 Python 3.8+）"
+                echo "❌ 依赖安装失败"
                 exit 1
             }
+        elif [ -f "requirements-compat.txt" ]; then
+            echo "Python 版本较旧，尝试使用兼容版本的依赖文件..."
+            pip install -q -r requirements-compat.txt || {
+                echo "❌ 兼容版本安装失败"
+                exit 1
+            }
+        else
+            echo "❌ 找不到兼容版本的依赖文件"
+            exit 1
         fi
     else
         echo "✅ Django 已安装"
@@ -140,25 +141,29 @@ if ! python3 -c "import django" 2>/dev/null; then
     echo "❌ Django 未安装，正在安装..."
     pip install -q --upgrade pip
     
-    # 根据 Python 版本选择 requirements 文件
-    if [ -f "requirements-compat.txt" ]; then
-        echo "尝试使用兼容版本的依赖文件..."
-        if pip install -q -r requirements-compat.txt 2>/dev/null; then
-            echo "✅ 使用兼容版本依赖安装成功"
-        else
-            echo "⚠️  兼容版本安装失败，尝试使用默认 requirements.txt..."
-            pip install -q -r requirements.txt || {
-                echo "❌ 依赖安装失败"
-                cd ..
-                exit 1
-            }
-        fi
-    else
+    # 检查 Python 版本
+    PYTHON_MAJOR=$(python3 -c "import sys; print(sys.version_info.major)" 2>/dev/null || echo "3")
+    PYTHON_MINOR=$(python3 -c "import sys; print(sys.version_info.minor)" 2>/dev/null || echo "6")
+    
+    # Python 3.8+ 使用标准 requirements.txt
+    if [ "$PYTHON_MAJOR" -ge 3 ] && [ "$PYTHON_MINOR" -ge 8 ]; then
+        echo "使用标准依赖文件..."
         pip install -q -r requirements.txt || {
             echo "❌ 依赖安装失败"
             cd ..
             exit 1
         }
+    elif [ -f "requirements-compat.txt" ]; then
+        echo "使用兼容版本的依赖文件..."
+        pip install -q -r requirements-compat.txt || {
+            echo "❌ 依赖安装失败"
+            cd ..
+            exit 1
+        }
+    else
+        echo "❌ 找不到依赖文件"
+        cd ..
+        exit 1
     fi
 fi
 
@@ -169,10 +174,15 @@ python3 manage.py check || {
     echo "尝试重新安装依赖..."
     pip install -q --upgrade pip
     
-    # 尝试使用兼容版本
-    if [ -f "requirements-compat.txt" ]; then
-        echo "尝试使用兼容版本的依赖文件..."
-        pip install -q -r requirements-compat.txt || pip install -q -r requirements.txt
+    # 检查 Python 版本
+    PYTHON_MAJOR=$(python3 -c "import sys; print(sys.version_info.major)" 2>/dev/null || echo "3")
+    PYTHON_MINOR=$(python3 -c "import sys; print(sys.version_info.minor)" 2>/dev/null || echo "6")
+    
+    # 根据 Python 版本选择依赖文件
+    if [ "$PYTHON_MAJOR" -ge 3 ] && [ "$PYTHON_MINOR" -ge 8 ]; then
+        pip install -q -r requirements.txt
+    elif [ -f "requirements-compat.txt" ]; then
+        pip install -q -r requirements-compat.txt
     else
         pip install -q -r requirements.txt
     fi
