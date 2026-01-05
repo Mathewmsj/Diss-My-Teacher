@@ -51,18 +51,52 @@ echo "4. 检查依赖..."
 if [ ! -d "node_modules" ]; then
     echo "安装前端依赖..."
     npm install
+else
+    echo "✅ 前端依赖已存在"
 fi
 
-if [ ! -d "backend/backend-env" ] && [ ! -d "backend-env" ]; then
+# 检查并设置后端虚拟环境
+cd backend
+VENV_PATH=""
+if [ -d "backend-env" ]; then
+    VENV_PATH="backend-env"
+    echo "✅ 找到虚拟环境: backend/backend-env"
+elif [ -d "../backend-env" ]; then
+    VENV_PATH="../backend-env"
+    echo "✅ 找到虚拟环境: backend-env (上级目录)"
+else
     echo "创建后端虚拟环境..."
-    cd backend
     python3 -m venv backend-env
-    source backend-env/bin/activate
-    pip install -q --upgrade pip
-    pip install -q -r requirements.txt
-    python3 manage.py migrate --noinput
-    cd ..
+    VENV_PATH="backend-env"
 fi
+
+# 激活虚拟环境
+if [ -f "$VENV_PATH/bin/activate" ]; then
+    source "$VENV_PATH/bin/activate"
+    echo "✅ 虚拟环境已激活"
+    
+    # 检查 Django 是否安装
+    if ! python3 -c "import django" 2>/dev/null; then
+        echo "Django 未安装，正在安装依赖..."
+        pip install -q --upgrade pip
+        pip install -q -r requirements.txt
+    else
+        echo "✅ Django 已安装"
+        # 更新依赖以确保最新
+        echo "更新依赖..."
+        pip install -q --upgrade pip
+        pip install -q -r requirements.txt
+    fi
+    
+    # 执行数据库迁移
+    echo "执行数据库迁移..."
+    python3 manage.py migrate --noinput || echo "警告: 数据库迁移失败"
+else
+    echo "❌ 无法找到虚拟环境激活脚本"
+    exit 1
+fi
+
+cd ..
 
 # 5. 启动服务
 echo ""
@@ -72,18 +106,36 @@ chmod +x start.sh stop.sh 2>/dev/null || true
 # 启动后端
 echo "启动后端..."
 cd backend
+
+# 确保虚拟环境已激活
 if [ -d "backend-env" ]; then
     source backend-env/bin/activate
 elif [ -d "../backend-env" ]; then
     source ../backend-env/bin/activate
+else
+    echo "❌ 无法找到虚拟环境"
+    exit 1
+fi
+
+# 验证 Django 是否可用
+if ! python3 -c "import django" 2>/dev/null; then
+    echo "❌ Django 未安装，正在安装..."
+    pip install -q --upgrade pip
+    pip install -q -r requirements.txt
 fi
 
 # 先测试一下能否正常启动
 echo "测试 Django 配置..."
 python3 manage.py check || {
     echo "❌ Django 配置检查失败"
-    cd ..
-    exit 1
+    echo "尝试重新安装依赖..."
+    pip install -q --upgrade pip
+    pip install -q -r requirements.txt
+    python3 manage.py check || {
+        echo "❌ Django 配置检查仍然失败"
+        cd ..
+        exit 1
+    }
 }
 
 # 启动后端服务
