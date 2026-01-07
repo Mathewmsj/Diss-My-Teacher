@@ -1,267 +1,93 @@
 #!/bin/bash
 
-# 快速修复脚本
+# 快速修复脚本 - 检查并创建虚拟环境
 
 echo "=========================================="
-echo "快速修复脚本"
+echo "快速修复虚拟环境"
 echo "=========================================="
 
+# 获取项目根目录
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
-BACKEND_PORT=5007
-FRONTEND_PORT=5008
+echo "项目根目录: $SCRIPT_DIR"
 
-# 1. 停止所有相关进程
-echo ""
-echo "1. 停止所有相关进程..."
-./stop.sh 2>/dev/null || true
-pkill -f "python3 manage.py runserver" 2>/dev/null || true
-pkill -f "vite" 2>/dev/null || true
-pkill -f "node.*vite" 2>/dev/null || true
-sleep 2
-
-# 2. 检查端口占用
-echo ""
-echo "2. 检查端口占用..."
-for port in $BACKEND_PORT $FRONTEND_PORT; do
-    PID=$(lsof -ti :$port 2>/dev/null)
-    if [ ! -z "$PID" ]; then
-        echo "端口 $port 被进程 $PID 占用，正在停止..."
-        kill -9 $PID 2>/dev/null || true
-        sleep 1
-    fi
-done
-
-# 3. 检查日志文件
-echo ""
-echo "3. 检查最近的错误日志..."
-if [ -f "backend.log" ]; then
-    echo "--- 后端日志最后10行 ---"
-    tail -10 backend.log
-fi
-if [ -f "frontend.log" ]; then
-    echo "--- 前端日志最后10行 ---"
-    tail -10 frontend.log
-fi
-
-# 4. 检查依赖
-echo ""
-echo "4. 检查依赖..."
-if [ ! -d "node_modules" ]; then
-    echo "安装前端依赖..."
-    npm install
-else
-    echo "✅ 前端依赖已存在"
-fi
-
-# 检查并设置后端虚拟环境
+# 检查虚拟环境位置
 cd backend
-VENV_PATH=""
+
 if [ -d "backend-env" ]; then
-    VENV_PATH="backend-env"
-    echo "✅ 找到虚拟环境: backend/backend-env"
+    echo "✅ 找到虚拟环境: $(pwd)/backend-env"
+    VENV_PATH="$(pwd)/backend-env"
 elif [ -d "../backend-env" ]; then
-    VENV_PATH="../backend-env"
-    echo "✅ 找到虚拟环境: backend-env (上级目录)"
+    echo "✅ 找到虚拟环境: $(cd .. && pwd)/backend-env"
+    VENV_PATH="$(cd .. && pwd)/backend-env"
 else
-    echo "创建后端虚拟环境..."
-    python3 -m venv backend-env
-    VENV_PATH="backend-env"
+    echo "❌ 未找到虚拟环境"
+    echo ""
+    echo "正在创建虚拟环境..."
+    
+    # 检查 python3.9
+    if ! command -v python3.9 > /dev/null 2>&1; then
+        echo "❌ 未找到 python3.9"
+        echo "请确保已安装 Python 3.9"
+        exit 1
+    fi
+    
+    # 创建虚拟环境
+    python3.9 -m venv backend-env
+    
+    if [ $? -ne 0 ]; then
+        echo "❌ 创建虚拟环境失败"
+        exit 1
+    fi
+    
+    echo "✅ 虚拟环境创建成功"
+    VENV_PATH="$(pwd)/backend-env"
 fi
 
 # 激活虚拟环境
-if [ -f "$VENV_PATH/bin/activate" ]; then
-    source "$VENV_PATH/bin/activate"
-    echo "✅ 虚拟环境已激活"
-    
-    # 检查 Python 版本
-    PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null || echo "unknown")
-    PYTHON_MAJOR=$(python3 -c "import sys; print(sys.version_info.major)" 2>/dev/null || echo "3")
-    PYTHON_MINOR=$(python3 -c "import sys; print(sys.version_info.minor)" 2>/dev/null || echo "6")
-    echo "Python 版本: $PYTHON_VERSION"
-    
-    # 检查 Django 是否安装
-    if ! python3 -c "import django" 2>/dev/null; then
-        echo "Django 未安装，正在安装依赖..."
-        pip install -q --upgrade pip
-        
-        # Python 3.8+ 使用标准 requirements.txt，否则使用兼容版本
-        if [ "$PYTHON_MAJOR" -ge 3 ] && [ "$PYTHON_MINOR" -ge 8 ]; then
-            echo "Python 3.8+  detected，使用标准依赖文件..."
-            pip install -q -r requirements.txt || {
-                echo "❌ 依赖安装失败"
-                exit 1
-            }
-        elif [ -f "requirements-compat.txt" ]; then
-            echo "Python 版本较旧，尝试使用兼容版本的依赖文件..."
-            pip install -q -r requirements-compat.txt || {
-                echo "❌ 兼容版本安装失败"
-                exit 1
-            }
-        else
-            echo "❌ 找不到兼容版本的依赖文件"
-            exit 1
-        fi
-    else
-        echo "✅ Django 已安装"
-    fi
-    
-    # 执行数据库迁移
-    echo "执行数据库迁移..."
-    python3 manage.py migrate --noinput || echo "警告: 数据库迁移失败"
-else
-    echo "❌ 无法找到虚拟环境激活脚本"
-    exit 1
-fi
-
-cd ..
-
-# 5. 启动服务
 echo ""
-echo "5. 启动服务..."
-chmod +x start.sh stop.sh 2>/dev/null || true
+echo "激活虚拟环境..."
+source "$VENV_PATH/bin/activate"
 
-# 启动后端
-echo "启动后端..."
-cd backend
+# 检查 Python 版本
+PYTHON_VERSION=$(python --version 2>&1)
+echo "Python 版本: $PYTHON_VERSION"
 
-# 确保虚拟环境已激活
-if [ -d "backend-env" ]; then
-    source backend-env/bin/activate
-elif [ -d "../backend-env" ]; then
-    source ../backend-env/bin/activate
-else
-    echo "❌ 无法找到虚拟环境"
-    exit 1
-fi
-
-# 验证 Django 是否可用
-if ! python3 -c "import django" 2>/dev/null; then
-    echo "❌ Django 未安装，正在安装..."
-    pip install -q --upgrade pip
+# 检查 Django 是否安装
+if ! python -c "import django" 2>/dev/null; then
+    echo ""
+    echo "Django 未安装，正在安装依赖..."
     
-    # 检查 Python 版本
-    PYTHON_MAJOR=$(python3 -c "import sys; print(sys.version_info.major)" 2>/dev/null || echo "3")
-    PYTHON_MINOR=$(python3 -c "import sys; print(sys.version_info.minor)" 2>/dev/null || echo "6")
+    # 升级 pip
+    python -m pip install --upgrade pip setuptools wheel
     
-    # Python 3.8+ 使用标准 requirements.txt
-    if [ "$PYTHON_MAJOR" -ge 3 ] && [ "$PYTHON_MINOR" -ge 8 ]; then
-        echo "使用标准依赖文件..."
-        pip install -q -r requirements.txt || {
-            echo "❌ 依赖安装失败"
-            cd ..
-            exit 1
-        }
-    elif [ -f "requirements-compat.txt" ]; then
-        echo "使用兼容版本的依赖文件..."
-        pip install -q -r requirements-compat.txt || {
-            echo "❌ 依赖安装失败"
-            cd ..
-            exit 1
-        }
+    # 安装依赖
+    if [ -f "requirements.txt" ]; then
+        pip install -r requirements.txt
     else
-        echo "❌ 找不到依赖文件"
-        cd ..
+        echo "❌ 未找到 requirements.txt"
         exit 1
     fi
-fi
-
-# 先测试一下能否正常启动
-echo "测试 Django 配置..."
-python3 manage.py check || {
-    echo "❌ Django 配置检查失败"
-    echo "尝试重新安装依赖..."
-    pip install -q --upgrade pip
     
-    # 检查 Python 版本
-    PYTHON_MAJOR=$(python3 -c "import sys; print(sys.version_info.major)" 2>/dev/null || echo "3")
-    PYTHON_MINOR=$(python3 -c "import sys; print(sys.version_info.minor)" 2>/dev/null || echo "6")
-    
-    # 根据 Python 版本选择依赖文件
-    if [ "$PYTHON_MAJOR" -ge 3 ] && [ "$PYTHON_MINOR" -ge 8 ]; then
-        pip install -q -r requirements.txt
-    elif [ -f "requirements-compat.txt" ]; then
-        pip install -q -r requirements-compat.txt
-    else
-        pip install -q -r requirements.txt
-    fi
-    
-    python3 manage.py check || {
-        echo "❌ Django 配置检查仍然失败"
-        cd ..
+    # 验证安装
+    python -c "import django; print('Django 版本:', django.get_version())" 2>/dev/null || {
+        echo "❌ Django 安装失败"
         exit 1
     }
-}
-
-# 启动后端服务
-nohup python3 manage.py runserver 0.0.0.0:$BACKEND_PORT > ../backend.log 2>&1 &
-BACKEND_PID=$!
-echo "后端已启动 (PID: $BACKEND_PID)"
-echo $BACKEND_PID > ../backend.pid
+else
+    echo "✅ Django 已安装"
+    python -c "import django; print('Django 版本:', django.get_version())"
+fi
 
 cd ..
 
-# 等待后端启动
-sleep 3
-
-# 检查后端是否真的启动了
-if ps -p $BACKEND_PID > /dev/null 2>&1; then
-    echo "✅ 后端进程正在运行"
-else
-    echo "❌ 后端进程启动失败，查看日志:"
-    tail -20 backend.log
-    exit 1
-fi
-
-# 启动前端
-echo ""
-echo "启动前端..."
-VITE_API_BASE="http://110.40.153.38:$BACKEND_PORT/api" PORT=$FRONTEND_PORT nohup npm run dev > frontend.log 2>&1 &
-FRONTEND_PID=$!
-echo "前端已启动 (PID: $FRONTEND_PID)"
-echo $FRONTEND_PID > frontend.pid
-
-# 等待前端启动
-sleep 5
-
-# 检查前端是否真的启动了
-if ps -p $FRONTEND_PID > /dev/null 2>&1; then
-    echo "✅ 前端进程正在运行"
-else
-    echo "❌ 前端进程启动失败，查看日志:"
-    tail -20 frontend.log
-fi
-
-# 6. 最终检查
-echo ""
-echo "6. 最终检查..."
-sleep 2
-
-echo ""
-echo "进程状态:"
-ps aux | grep -E "python.*manage.py.*$BACKEND_PORT|node.*vite.*$FRONTEND_PORT" | grep -v grep || echo "未找到进程"
-
-echo ""
-echo "端口监听状态:"
-for port in $BACKEND_PORT $FRONTEND_PORT; do
-    if lsof -i :$port >/dev/null 2>&1; then
-        echo "✅ 端口 $port 正在监听"
-    else
-        echo "❌ 端口 $port 未监听"
-    fi
-done
-
 echo ""
 echo "=========================================="
-echo "修复完成！"
+echo "✅ 修复完成！"
 echo "=========================================="
-echo "访问地址："
-echo "  前端: http://110.40.153.38:$FRONTEND_PORT"
-echo "  后端: http://110.40.153.38:$BACKEND_PORT/api"
 echo ""
-echo "如果还是无法访问，请查看日志："
-echo "  tail -f backend.log"
-echo "  tail -f frontend.log"
-echo "=========================================="
+echo "现在可以启动服务:"
+echo "  ./start.sh"
+echo ""
 
