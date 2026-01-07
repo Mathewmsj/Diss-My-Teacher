@@ -20,11 +20,16 @@ echo ""
 echo "2. 清理端口占用..."
 for port in 5000 5009 5010 8806 8807; do
     if command -v lsof > /dev/null 2>&1; then
-        lsof -ti:$port | xargs kill -9 2>/dev/null || true
+        PIDS=$(lsof -ti:$port 2>/dev/null)
+        if [ ! -z "$PIDS" ]; then
+            echo "清理端口 $port 的进程: $PIDS"
+            echo "$PIDS" | xargs kill -9 2>/dev/null || true
+        fi
     elif command -v fuser > /dev/null 2>&1; then
         fuser -k $port/tcp 2>/dev/null || true
     fi
 done
+sleep 2
 
 # 清理进程ID文件
 rm -f backend.pid frontend.pid
