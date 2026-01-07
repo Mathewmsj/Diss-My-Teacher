@@ -63,15 +63,32 @@ fi
 
 # 使用虚拟环境的 python 在后台启动 Django 服务器
 # 重要: 必须使用 0.0.0.0 才能从外部访问
+# 先检查端口是否被占用
+if command -v lsof > /dev/null 2>&1; then
+    EXISTING_PID=$(lsof -ti:$BACKEND_PORT 2>/dev/null)
+    if [ ! -z "$EXISTING_PID" ]; then
+        echo "⚠️  端口 $BACKEND_PORT 被进程 $EXISTING_PID 占用，正在清理..."
+        kill -9 $EXISTING_PID 2>/dev/null || true
+        sleep 1
+    fi
+fi
+
 nohup "$VENV_PATH/bin/python" manage.py runserver 0.0.0.0:$BACKEND_PORT > ../backend.log 2>&1 &
 BACKEND_PID=$!
 echo "后端已启动 (PID: $BACKEND_PID, 端口: $BACKEND_PORT)"
 echo "后端日志: backend.log"
 
-# 等待一秒检查进程是否还在运行
-sleep 1
+# 等待2秒检查进程是否还在运行
+sleep 2
 if ! ps -p $BACKEND_PID > /dev/null 2>&1; then
-    echo "⚠️  后端进程启动后立即退出，请检查日志: tail -f ../backend.log"
+    echo "❌ 后端进程启动后立即退出！"
+    echo "查看错误日志:"
+    tail -n 20 ../backend.log
+    echo ""
+    echo "请检查:"
+    echo "1. 端口是否被占用: lsof -i:$BACKEND_PORT"
+    echo "2. Django是否正确安装"
+    echo "3. 数据库迁移是否完成: cd backend && python manage.py migrate"
 fi
 
 # 回到项目根目录
