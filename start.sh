@@ -2,12 +2,12 @@
 
 # 启动脚本 - Rate My Teacher 应用
 # 使用方法: ./start.sh [backend_port] [frontend_port]
-# 示例: ./start.sh 5009 5010  (直接IP访问，端口范围5000-5010)
+# 示例: ./start.sh 5001 8080  (直接IP访问，端口范围5000-5010)
 # 示例: ./start.sh 8806 8807  (域名访问，mathew的端口是8806)
 
 # 获取端口参数（如果未提供，使用默认值）
-BACKEND_PORT=${1:-5009}
-FRONTEND_PORT=${2:-5010}
+BACKEND_PORT=${1:-5001}
+FRONTEND_PORT=${2:-8080}
 
 echo "=========================================="
 echo "Rate My Teacher 启动脚本"
@@ -61,8 +61,7 @@ fi
 
 # 使用 nohup 在后台启动 Vite 服务器
 # 注意: Vite 配置已经支持 PORT 环境变量，host 已设置为 0.0.0.0
-# 设置前端 API 基础 URL，指向服务器后端
-VITE_API_BASE="http://110.40.153.38:$BACKEND_PORT/api" PORT=$FRONTEND_PORT nohup npm run dev > frontend.log 2>&1 &
+PORT=$FRONTEND_PORT nohup npm run dev > frontend.log 2>&1 &
 FRONTEND_PID=$!
 echo "前端已启动 (PID: $FRONTEND_PID, 端口: $FRONTEND_PORT)"
 echo "前端日志: frontend.log"
