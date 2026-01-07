@@ -16,12 +16,12 @@ const getApiBase = () => {
   }
   // 检测是否使用IP访问（服务器IP：110.40.153.38）
   if (hostname === '110.40.153.38' || hostname.match(/^(\d+\.){3}\d+$/)) {
-    // 使用IP访问时，使用相同IP的后端端口5000
-    return `http://${hostname}:5000/api`;
+    // 使用IP访问时，使用相同IP的后端端口5009
+    return `http://${hostname}:5009/api`;
   }
   // 本地开发时使用 localhost
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:5000/api';
+    return 'http://localhost:5009/api';
   }
   // 默认使用 Render 地址
   return 'https://diss-my-teacher.onrender.com/api';
@@ -259,7 +259,6 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ school_code, username, password }),
     }),
-    }),
   signup: (payload) =>
     request('/signup/', {
       method: 'POST',
@@ -388,7 +387,6 @@ export const api = {
     request('/superadmin-login/', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
-    }),
     }),
   getSuperAdminStats: () => request('/superadmin/stats/'),
   getAllRatings: () => request('/superadmin/all_ratings/'),
