@@ -12,7 +12,24 @@ def healthz(_request):
 
 def root(_request):
     # 根路径重定向到前端域名
-    frontend_url = os.getenv('FRONTEND_URL', 'https://diss-my-teachers.onrender.com')
+    # 优先使用环境变量，否则根据请求的 Host 自动判断
+    frontend_url = os.getenv('FRONTEND_URL')
+    
+    if not frontend_url:
+        # 根据请求的 Host 自动判断前端地址
+        host = _request.get_host()
+        if 'mathew.yunguhs.com' in host:
+            # 使用当前协议（http 或 https）
+            scheme = 'https' if _request.is_secure() else 'http'
+            frontend_url = f'{scheme}://mathew.yunguhs.com'
+        elif 'yunguhs.com' in host:
+            # 其他 yunguhs.com 子域名
+            scheme = 'https' if _request.is_secure() else 'http'
+            frontend_url = f'{scheme}://{host}'
+        else:
+            # 默认使用 Render 地址
+            frontend_url = 'https://diss-my-teachers.onrender.com'
+    
     return HttpResponseRedirect(frontend_url)
 
 
