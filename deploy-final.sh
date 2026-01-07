@@ -2,13 +2,13 @@
 
 # 最终部署脚本 - 完全按照部署教程要求
 # 使用方法: ./deploy-final.sh [backend_port] [frontend_port]
-# 示例: ./deploy-final.sh 5007 5008  (IP访问，端口范围5000-5010)
+# 示例: ./deploy-final.sh 5009 5010  (IP访问，端口范围5000-5010)
 # 示例: ./deploy-final.sh 8806 8807  (域名访问，mathew的端口是8806)
 
 # set -e  # 暂时注释掉，允许错误处理
 
-BACKEND_PORT=${1:-5007}
-FRONTEND_PORT=${2:-5008}
+BACKEND_PORT=${1:-5009}
+FRONTEND_PORT=${2:-5010}
 
 echo "=========================================="
 echo "🚀 最终部署脚本 - 按照部署教程"
