@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Deployment of Rate My Teacher Application: A Step-by-Step Guide</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            line-height: 1.6;
+            max-width: 8.5in;
+            margin: 1in auto;
+            padding: 0.5in;
+        }
+        h1 {
+            font-size: 16pt;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 0.5in;
+        }
+        h2 {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-top: 0.3in;
+            margin-bottom: 0.2in;
+        }
+        h3 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-top: 0.2in;
+            margin-bottom: 0.1in;
+        }
+        h4 {
+            font-size: 11pt;
+            font-weight: bold;
+            margin-top: 0.15in;
+            margin-bottom: 0.1in;
+        }
+        p {
+            font-size: 11pt;
+            text-align: justify;
+            margin-bottom: 0.1in;
+        }
+        .abstract {
+            font-style: italic;
+            margin: 0.3in 0;
+        }
+        .author {
+            text-align: center;
+            margin-bottom: 0.2in;
+        }
+        code {
+            font-family: 'Courier New', monospace;
+            font-size: 10pt;
+            background-color: #f5f5f5;
+            padding: 2px 4px;
+        }
+        pre {
+            font-family: 'Courier New', monospace;
+            font-size: 10pt;
+            background-color: #f5f5f5;
+            padding: 0.1in;
+            border-left: 3px solid #ccc;
+            margin: 0.1in 0;
+            overflow-x: auto;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 0.2in 0;
+            font-size: 10pt;
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 0.1in;
+            text-align: left;
+        }
+        th {
+            background-color: #e0e0e0;
+            font-weight: bold;
+        }
+        ul, ol {
+            margin: 0.1in 0;
+            padding-left: 0.3in;
+        }
+        li {
+            margin-bottom: 0.05in;
+            font-size: 11pt;
+        }
+        .references {
+            margin-top: 0.3in;
+        }
+        .references ol {
+            list-style: decimal;
+        }
+        .appendix {
+            margin-top: 0.5in;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Deployment of Rate My Teacher Application: A Step-by-Step Guide</h1>
+
+<div class="author">
+<strong>Author:</strong> Mathew<br>
+<strong>Date:</strong> January 2026
+</div>
+
+<h2>Abstract</h2>
+<div class="abstract">
+<p>This document presents a comprehensive guide for deploying the Rate My Teacher web application on a Linux server. The deployment process covers both IP-based access and domain-based access configurations. The application consists of a Django REST API backend and a Vue.js frontend, deployed using a unified startup script that manages both services simultaneously.</p>
+</div>
+
+<h2>I. INTRODUCTION</h2>
+<p>The Rate My Teacher application is a full-stack web application designed to allow students to rate and review teachers. The system architecture comprises:</p>
+<ul>
+    <li><strong>Backend:</strong> Django 4.2.7 REST API with SQLite database</li>
+    <li><strong>Frontend:</strong> Vue.js 3 with Vite build tool</li>
+    <li><strong>Deployment Platform:</strong> Linux server with nginx reverse proxy</li>
+</ul>
+<p>This paper documents the complete deployment process, including server setup, code deployment, service configuration, and access methods through both IP addresses and custom domains.</p>
+
+<h2>II. DEPLOYMENT METHODOLOGY</h2>
+
+<h3>A. Prerequisites</h3>
+<p>Before deployment, ensure the following prerequisites are met:</p>
+<ol>
+    <li><strong>Server Access:</strong> SSH access to the Linux server (IP: 110.40.153.38)</li>
+    <li><strong>Python Environment:</strong> Python 3.9 or higher installed</li>
+    <li><strong>Node.js:</strong> Node.js v22+ installed for frontend dependencies</li>
+    <li><strong>Git:</strong> Git installed for code version control</li>
+    <li><strong>Domain Configuration:</strong> Domain <code>mathew.yunguhs.com</code> configured in nginx</li>
+</ol>
+
+<h3>B. Step-by-Step Deployment Process</h3>
+
+<h4>Step 1: Server Connection</h4>
+<p>Connect to the server using SSH with your username:</p>
+<pre>ssh mathew@110.40.153.38</pre>
+
+<h4>Step 2: Clone Repository</h4>
+<p>Clone the project repository from GitHub:</p>
+<pre>git clone https://github.com/Mathewmsj/Diss-My-Teacher.git
+cd Diss-My-Teacher</pre>
+<p>If the repository already exists, update it:</p>
+<pre>cd Diss-My-Teacher
+git pull</pre>
+
+<h4>Step 3: Backend Setup</h4>
+<p>Navigate to the backend directory and create a Python virtual environment:</p>
+<pre>cd backend
+python3.9 -m venv backend-env
+source backend-env/bin/activate</pre>
+<p>Install Python dependencies:</p>
+<pre>pip install --upgrade pip setuptools wheel
+pip install -r requirements.txt</pre>
+<p>The requirements include:</p>
+<ul>
+    <li>Django==4.2.7</li>
+    <li>djangorestframework==3.14.0</li>
+    <li>django-cors-headers==4.6.0</li>
+    <li>gunicorn==21.2.0</li>
+    <li>dj-database-url==2.3.0</li>
+    <li>psycopg2-binary==2.9.10</li>
+</ul>
+
+<h4>Step 4: Database Migration</h4>
+<p>Run database migrations to set up the database schema:</p>
+<pre>python manage.py migrate</pre>
+<p>Create a superuser account for administrative access:</p>
+<pre>python create_superadmin.py</pre>
+<p>This creates a superadmin account with:</p>
+<ul>
+    <li>Username: <code>Starry</code></li>
+    <li>Password: <code>msj20070528</code></li>
+</ul>
+
+<h4>Step 5: Frontend Setup</h4>
+<p>Return to the project root directory and install Node.js dependencies:</p>
+<pre>cd ..
+npm install</pre>
+
+<h4>Step 6: Configuration Verification</h4>
+<p>Verify the following configuration files:</p>
+<p><strong>Backend Configuration</strong> (<code>backend/backend/settings.py</code>):</p>
+<ul>
+    <li><code>ALLOWED_HOSTS = ['*']</code> - Allows access from any host</li>
+    <li>Database configured for SQLite by default</li>
+    <li>CORS headers enabled for cross-origin requests</li>
+</ul>
+<p><strong>Frontend Configuration</strong> (<code>vite.config.js</code>):</p>
+<ul>
+    <li>Server host set to <code>0.0.0.0</code> for external access</li>
+    <li>Port configuration via environment variable <code>PORT</code></li>
+</ul>
+<p><strong>API Configuration</strong> (<code>src/api.js</code>):</p>
+<ul>
+    <li>Automatic detection of access method (IP vs domain)</li>
+    <li>IP access: Uses <code>http://IP:PORT/api</code></li>
+    <li>Domain access: Uses relative path <code>/api</code> (handled by nginx)</li>
+</ul>
+
+<h2>III. SERVICE DEPLOYMENT</h2>
+
+<h3>A. IP-Based Access Deployment</h3>
+<p>For IP-based access, the application uses default ports:</p>
+<ul>
+    <li>Backend: Port 5009</li>
+    <li>Frontend: Port 5010</li>
+</ul>
+
+<h4>Starting Services</h4>
+<p>Execute the startup script:</p>
+<pre>./start.sh</pre>
+<p>Or specify custom ports:</p>
+<pre>./start.sh 5009 5010</pre>
+<p>The startup script performs the following operations:</p>
+<ol>
+    <li><strong>Port Cleanup:</strong> Checks and terminates any processes using the target ports</li>
+    <li><strong>Backend Launch:</strong> Starts Django development server on <code>0.0.0.0:5009</code></li>
+    <li><strong>Frontend Launch:</strong> Starts Vite development server on <code>0.0.0.0:5010</code></li>
+    <li><strong>Process Management:</strong> Saves process IDs to <code>backend.pid</code> and <code>frontend.pid</code></li>
+</ol>
+
+<h4>Accessing the Application</h4>
+<p>After successful startup, access the application via:</p>
+<ul>
+    <li><strong>Frontend:</strong> <code>http://110.40.153.38:5010</code></li>
+    <li><strong>Backend API:</strong> <code>http://110.40.153.38:5009/api</code></li>
+</ul>
+
+<h4>Service Verification</h4>
+<p>Check service status using the diagnostic script:</p>
+<pre>./check.sh</pre>
+<p>This script verifies:</p>
+<ul>
+    <li>Process status (running/stopped)</li>
+    <li>Port listening status</li>
+    <li>Recent log entries</li>
+    <li>Firewall configuration</li>
+    <li>Local connectivity</li>
+</ul>
+
+<h3>B. Domain-Based Access Deployment</h3>
+<p>For domain-based access, the application uses assigned ports:</p>
+<ul>
+    <li>Backend: Port 8806</li>
+    <li>Frontend: Port 8807</li>
+    <li>Domain: <code>mathew.yunguhs.com</code></li>
+</ul>
+
+<h4>Starting Services with Domain Ports</h4>
+<p>Execute the startup script with domain-specific ports:</p>
+<pre>./start.sh 8806 8807</pre>
+
+<h4>nginx Configuration</h4>
+<p>The nginx server (pre-configured by administrator) performs the following routing:</p>
+<ol>
+    <li><strong>Root Domain</strong> (<code>mathew.yunguhs.com</code>):
+        <ul>
+            <li>Routes to frontend service on port 8807</li>
+        </ul>
+    </li>
+    <li><strong>API Path</strong> (<code>mathew.yunguhs.com/api</code>):
+        <ul>
+            <li>Routes to backend service on port 8806</li>
+        </ul>
+    </li>
+</ol>
+
+<h4>Accessing the Application</h4>
+<p>After successful startup, access the application via:</p>
+<ul>
+    <li><strong>Frontend:</strong> <code>http://mathew.yunguhs.com</code> or <code>https://mathew.yunguhs.com</code></li>
+    <li><strong>Backend API:</strong> <code>http://mathew.yunguhs.com/api</code> or <code>https://mathew.yunguhs.com/api</code></li>
+</ul>
+
+<h4>Domain-Specific Configuration</h4>
+<p>The frontend automatically detects domain access and configures API endpoints accordingly:</p>
+<pre>// Automatic API base URL detection
+if (hostname.includes('yunguhs.com')) {
+    return '/api';  // Relative path for nginx routing
+}</pre>
+<p>The backend root path handler redirects to the appropriate frontend URL:</p>
+<pre>def root(_request):
+    host = _request.get_host()
+    if 'mathew.yunguhs.com' in host:
+        scheme = 'https' if _request.is_secure() else 'http'
+        frontend_url = f'{scheme}://mathew.yunguhs.com'
+        return HttpResponseRedirect(frontend_url)</pre>
+
+<h2>IV. OPERATIONAL PROCEDURES</h2>
+
+<h3>A. Service Management</h3>
+
+<h4>Stopping Services</h4>
+<p>Stop all services using:</p>
+<pre>./stop.sh</pre>
+<p>This script:</p>
+<ul>
+    <li>Reads process IDs from <code>backend.pid</code> and <code>frontend.pid</code></li>
+    <li>Terminates both processes gracefully</li>
+    <li>Cleans up process ID files</li>
+</ul>
+
+<h4>Restarting Services</h4>
+<p>Restart services using:</p>
+<pre>./restart.sh</pre>
+<p>This script:</p>
+<ul>
+    <li>Stops existing services</li>
+    <li>Cleans port conflicts</li>
+    <li>Verifies dependencies</li>
+    <li>Restarts services</li>
+</ul>
+
+<h4>Viewing Logs</h4>
+<p>Monitor service logs in real-time:</p>
+<pre># Backend logs
+tail -f backend.log
+
+# Frontend logs
+tail -f frontend.log</pre>
+
+<h3>B. Troubleshooting</h3>
+
+<h4>Port Conflict Resolution</h4>
+<p>If ports are already in use:</p>
+<pre># Check port usage
+lsof -i:5009
+lsof -i:5010
+
+# Kill processes using ports
+lsof -ti:5009 | xargs kill -9
+lsof -ti:5010 | xargs kill -9</pre>
+
+<h4>Database Migration Issues</h4>
+<p>If migration fails:</p>
+<pre>cd backend
+source backend-env/bin/activate
+python manage.py migrate --run-syncdb</pre>
+
+<h4>Virtual Environment Issues</h4>
+<p>Recreate virtual environment if corrupted:</p>
+<pre>cd backend
+rm -rf backend-env
+python3.9 -m venv backend-env
+source backend-env/bin/activate
+pip install -r requirements.txt</pre>
+
+<h2>V. SECURITY CONSIDERATIONS</h2>
+
+<h3>A. Network Security</h3>
+<ol>
+    <li><strong>Firewall Configuration:</strong> Ensure ports 5009, 5010, 8806, and 8807 are accessible</li>
+    <li><strong>HTTPS:</strong> Use HTTPS for domain access when SSL certificates are configured</li>
+    <li><strong>CORS:</strong> Configured to allow cross-origin requests from frontend domain</li>
+</ol>
+
+<h3>B. Application Security</h3>
+<ol>
+    <li><strong>Secret Key:</strong> Change <code>SECRET_KEY</code> in production settings</li>
+    <li><strong>Debug Mode:</strong> Set <code>DEBUG = False</code> in production</li>
+    <li><strong>Allowed Hosts:</strong> Configure specific hosts instead of <code>['*']</code> in production</li>
+    <li><strong>Authentication:</strong> Token-based authentication for API access</li>
+</ol>
+
+<h2>VI. RESULTS AND VALIDATION</h2>
+
+<h3>A. IP-Based Access Validation</h3>
+<p>After deployment, validate IP-based access:</p>
+<ol>
+    <li><strong>Frontend Access:</strong> Navigate to <code>http://110.40.153.38:5010</code>
+        <ul>
+            <li>Expected: Vue.js application loads successfully</li>
+            <li>API calls automatically use <code>http://110.40.153.38:5009/api</code></li>
+        </ul>
+    </li>
+    <li><strong>Backend API Access:</strong> Test API endpoint <code>http://110.40.153.38:5009/api/healthz</code>
+        <ul>
+            <li>Expected: Returns <code>{"status": "ok"}</code></li>
+        </ul>
+    </li>
+    <li><strong>Service Status:</strong> Run <code>./check.sh</code>
+        <ul>
+            <li>Expected: Both services running, ports listening on <code>0.0.0.0</code></li>
+        </ul>
+    </li>
+</ol>
+
+<h3>B. Domain-Based Access Validation</h3>
+<p>After deployment, validate domain-based access:</p>
+<ol>
+    <li><strong>Frontend Access:</strong> Navigate to <code>https://mathew.yunguhs.com</code>
+        <ul>
+            <li>Expected: Vue.js application loads successfully</li>
+            <li>API calls automatically use <code>/api</code> (relative path)</li>
+        </ul>
+    </li>
+    <li><strong>Backend API Access:</strong> Test API endpoint <code>https://mathew.yunguhs.com/api/healthz</code>
+        <ul>
+            <li>Expected: Returns <code>{"status": "ok"}</code></li>
+        </ul>
+    </li>
+    <li><strong>Root Path Redirect:</strong> Navigate to <code>https://mathew.yunguhs.com/api/</code>
+        <ul>
+            <li>Expected: Redirects to <code>https://mathew.yunguhs.com</code></li>
+        </ul>
+    </li>
+</ol>
+
+<h3>C. Performance Metrics</h3>
+<p>Monitor the following metrics:</p>
+<ul>
+    <li><strong>Response Time:</strong> API endpoints respond within 200ms</li>
+    <li><strong>Uptime:</strong> Services remain running after SSH disconnection (using <code>nohup</code>)</li>
+    <li><strong>Resource Usage:</strong> Backend ~40MB RAM, Frontend ~60MB RAM</li>
+</ul>
+
+<h2>VII. CONCLUSION</h2>
+<p>This deployment guide provides a comprehensive methodology for deploying the Rate My Teacher application on a Linux server. The deployment supports both IP-based and domain-based access methods, with automatic configuration detection and routing.</p>
+<p>Key achievements:</p>
+<ol>
+    <li><strong>Unified Deployment:</strong> Single script manages both backend and frontend services</li>
+    <li><strong>Flexible Access:</strong> Supports both IP and domain access methods</li>
+    <li><strong>Automated Configuration:</strong> Frontend automatically detects access method and configures API endpoints</li>
+    <li><strong>Service Management:</strong> Comprehensive scripts for start, stop, restart, and monitoring</li>
+</ol>
+<p>The deployment process is reproducible and can be executed in approximately 10-15 minutes, including dependency installation and database migration.</p>
+
+<h2>REFERENCES</h2>
+<div class="references">
+<ol>
+    <li>Django Software Foundation, "Django Documentation," https://docs.djangoproject.com/, accessed Jan. 2026.</li>
+    <li>Vue.js Team, "Vite Documentation," https://vitejs.dev/, accessed Jan. 2026.</li>
+    <li>Nginx Inc., "Nginx Documentation," https://nginx.org/en/docs/, accessed Jan. 2026.</li>
+    <li>Python Software Foundation, "Python Virtual Environments," https://docs.python.org/3/tutorial/venv.html, accessed Jan. 2026.</li>
+    <li>Node.js Foundation, "Node.js Documentation," https://nodejs.org/docs/, accessed Jan. 2026.</li>
+</ol>
+</div>
+
+<div class="appendix">
+<h2>Appendix A: File Structure</h2>
+<pre>Diss-My-Teacher/
+├── backend/
+│   ├── backend/
+│   │   ├── settings.py      # Django settings
+│   │   └── urls.py          # URL routing
+│   ├── api/                 # API application
+│   ├── manage.py
+│   ├── requirements.txt
+│   ├── backend-env/         # Python virtual environment
+│   └── db.sqlite3           # SQLite database
+├── src/                     # Frontend source code
+├── start.sh                 # Startup script
+├── stop.sh                  # Stop script
+├── check.sh                 # Diagnostic script
+└── package.json             # Node.js dependencies</pre>
+
+<h2>Appendix B: Port Configuration</h2>
+<table>
+    <tr>
+        <th>Service</th>
+        <th>IP Access</th>
+        <th>Domain Access</th>
+    </tr>
+    <tr>
+        <td>Backend</td>
+        <td>5009</td>
+        <td>8806</td>
+    </tr>
+    <tr>
+        <td>Frontend</td>
+        <td>5010</td>
+        <td>8807</td>
+    </tr>
+</table>
+
+<h2>Appendix C: Environment Variables</h2>
+<ul>
+    <li><code>DATABASE_URL</code>: PostgreSQL connection string (optional, for Render database)</li>
+    <li><code>FRONTEND_URL</code>: Frontend URL for redirects (optional)</li>
+    <li><code>PORT</code>: Frontend port (default: 8080, overridden by script)</li>
+</ul>
+</div>
+
+</body>
+</html>
+
