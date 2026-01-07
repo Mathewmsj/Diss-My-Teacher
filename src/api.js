@@ -2,16 +2,26 @@
 // 优先级：环境变量 > 自动检测 > 默认值
 // 1. 如果设置了 VITE_API_BASE 环境变量，使用该值
 // 2. 如果当前访问的是域名（如 mathew.yunguhs.com），使用相对路径 /api
-// 3. 否则使用 Render 默认地址
+// 3. 如果使用IP访问（如 110.40.153.38），使用相同IP的5000端口
+// 4. 否则使用 Render 默认地址
 const getApiBase = () => {
   if (import.meta.env.VITE_API_BASE) {
     return import.meta.env.VITE_API_BASE;
   }
-  // 检测是否使用域名访问（不是 localhost 或 IP）
   const hostname = window.location.hostname;
-  if (hostname.includes('yunguhs.com') || hostname.includes('.') && !hostname.match(/^(\d+\.){3}\d+$/) && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+  // 检测是否使用域名访问
+  if (hostname.includes('yunguhs.com') || (hostname.includes('.') && !hostname.match(/^(\d+\.){3}\d+$/) && hostname !== 'localhost' && hostname !== '127.0.0.1')) {
     // 使用域名时，使用相对路径，nginx 会自动转发到后端
     return '/api';
+  }
+  // 检测是否使用IP访问（服务器IP：110.40.153.38）
+  if (hostname === '110.40.153.38' || hostname.match(/^(\d+\.){3}\d+$/)) {
+    // 使用IP访问时，使用相同IP的后端端口5000
+    return `http://${hostname}:5000/api`;
+  }
+  // 本地开发时使用 localhost
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:5000/api';
   }
   // 默认使用 Render 地址
   return 'https://diss-my-teacher.onrender.com/api';
