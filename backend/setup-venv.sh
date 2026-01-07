@@ -11,6 +11,17 @@ echo "=========================================="
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
+echo "当前工作目录: $(pwd)"
+
+# 检查 requirements.txt 是否存在
+if [ ! -f "requirements.txt" ]; then
+    echo "❌ 错误: 在 $(pwd) 目录下找不到 requirements.txt"
+    echo "请确保在 backend 目录下运行此脚本"
+    exit 1
+fi
+
+echo "找到 requirements.txt: $(pwd)/requirements.txt"
+
 # 检查 python3.9 是否存在
 if ! command -v python3.9 > /dev/null 2>&1; then
     echo "❌ 未找到 python3.9"
