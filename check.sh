@@ -1,112 +1,166 @@
 #!/bin/bash
 
-# 诊断脚本 - 检查服务状态和常见问题
-
+# 诊断脚本 - 检查服务状态和访问问题
 echo "=========================================="
 echo "服务诊断脚本"
 echo "=========================================="
-
-# 获取脚本所在目录
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd "$SCRIPT_DIR"
-
-# 1. 检查进程是否运行
 echo ""
-echo "1. 检查进程状态..."
+
+# 读取端口信息
 if [ -f "backend.pid" ]; then
     BACKEND_PID=$(cat backend.pid)
-    if ps -p $BACKEND_PID > /dev/null 2>&1; then
-        echo "✅ 后端进程正在运行 (PID: $BACKEND_PID)"
-    else
-        echo "❌ 后端进程未运行 (PID文件存在但进程不存在)"
-    fi
+    echo "后端进程ID: $BACKEND_PID"
 else
-    echo "⚠️  未找到 backend.pid 文件"
+    echo "❌ 未找到 backend.pid 文件"
+    BACKEND_PID=""
 fi
 
 if [ -f "frontend.pid" ]; then
     FRONTEND_PID=$(cat frontend.pid)
+    echo "前端进程ID: $FRONTEND_PID"
+else
+    echo "❌ 未找到 frontend.pid 文件"
+    FRONTEND_PID=""
+fi
+
+echo ""
+echo "=========================================="
+echo "1. 检查进程状态"
+echo "=========================================="
+
+# 检查后端进程
+if [ ! -z "$BACKEND_PID" ]; then
+    if ps -p $BACKEND_PID > /dev/null 2>&1; then
+        echo "✅ 后端进程 (PID: $BACKEND_PID) 正在运行"
+        ps aux | grep $BACKEND_PID | grep -v grep
+    else
+        echo "❌ 后端进程 (PID: $BACKEND_PID) 已停止"
+    fi
+else
+    echo "⚠️  未找到后端进程ID"
+fi
+
+echo ""
+
+# 检查前端进程
+if [ ! -z "$FRONTEND_PID" ]; then
     if ps -p $FRONTEND_PID > /dev/null 2>&1; then
-        echo "✅ 前端进程正在运行 (PID: $FRONTEND_PID)"
+        echo "✅ 前端进程 (PID: $FRONTEND_PID) 正在运行"
+        ps aux | grep $FRONTEND_PID | grep -v grep
     else
-        echo "❌ 前端进程未运行 (PID文件存在但进程不存在)"
+        echo "❌ 前端进程 (PID: $FRONTEND_PID) 已停止"
     fi
 else
-    echo "⚠️  未找到 frontend.pid 文件"
+    echo "⚠️  未找到前端进程ID"
 fi
 
-# 2. 检查端口占用情况
 echo ""
-echo "2. 检查端口占用情况..."
-for port in 5000 5001 5002 5003 5004 5005 5006 5007 5008 5009 5010; do
-    PID=$(lsof -ti :$port 2>/dev/null)
-    if [ ! -z "$PID" ]; then
-        PROCESS=$(ps -p $PID -o comm= 2>/dev/null)
-        echo "端口 $port: 被进程 $PID ($PROCESS) 占用"
-    fi
-done
+echo "=========================================="
+echo "2. 检查端口监听"
+echo "=========================================="
 
-# 3. 检查日志文件
+# 检查5000端口（后端）
+if netstat -tuln 2>/dev/null | grep -q ":5000 "; then
+    echo "✅ 端口 5000 (后端) 正在监听"
+    netstat -tuln | grep ":5000 "
+elif ss -tuln 2>/dev/null | grep -q ":5000 "; then
+    echo "✅ 端口 5000 (后端) 正在监听"
+    ss -tuln | grep ":5000 "
+else
+    echo "❌ 端口 5000 (后端) 未在监听"
+fi
+
+# 检查5010端口（前端）
+if netstat -tuln 2>/dev/null | grep -q ":5010 "; then
+    echo "✅ 端口 5010 (前端) 正在监听"
+    netstat -tuln | grep ":5010 "
+elif ss -tuln 2>/dev/null | grep -q ":5010 "; then
+    echo "✅ 端口 5010 (前端) 正在监听"
+    ss -tuln | grep ":5010 "
+else
+    echo "❌ 端口 5010 (前端) 未在监听"
+fi
+
 echo ""
-echo "3. 检查日志文件（最后10行）..."
+echo "=========================================="
+echo "3. 检查最近日志"
+echo "=========================================="
+
 if [ -f "backend.log" ]; then
-    echo "--- 后端日志 (backend.log) ---"
-    tail -10 backend.log
+    echo "--- 后端日志（最后10行）---"
+    tail -n 10 backend.log
+    echo ""
 else
-    echo "⚠️  未找到 backend.log 文件"
+    echo "❌ 未找到 backend.log 文件"
+    echo ""
 fi
 
-echo ""
 if [ -f "frontend.log" ]; then
-    echo "--- 前端日志 (frontend.log) ---"
-    tail -10 frontend.log
+    echo "--- 前端日志（最后10行）---"
+    tail -n 10 frontend.log
+    echo ""
 else
-    echo "⚠️  未找到 frontend.log 文件"
+    echo "❌ 未找到 frontend.log 文件"
+    echo ""
 fi
 
-# 4. 检查依赖
-echo ""
-echo "4. 检查依赖..."
-if [ -d "node_modules" ]; then
-    echo "✅ node_modules 存在"
-else
-    echo "❌ node_modules 不存在，需要运行: npm install"
-fi
+echo "=========================================="
+echo "4. 检查防火墙状态"
+echo "=========================================="
 
-if [ -d "backend/backend-env" ] || [ -d "backend-env" ]; then
-    echo "✅ Python 虚拟环境存在"
-else
-    echo "⚠️  Python 虚拟环境不存在"
-fi
-
-# 5. 检查网络连接
-echo ""
-echo "5. 测试本地端口连接..."
-for port in 5000 5001; do
-    if timeout 2 bash -c "echo > /dev/tcp/127.0.0.1/$port" 2>/dev/null; then
-        echo "✅ 端口 $port 可以连接"
+# 检查防火墙状态
+if command -v firewall-cmd > /dev/null 2>&1; then
+    if systemctl is-active --quiet firewalld; then
+        echo "⚠️  firewalld 防火墙正在运行"
+        echo "检查端口是否开放:"
+        firewall-cmd --list-ports 2>/dev/null || echo "无法检查防火墙端口"
     else
-        echo "❌ 端口 $port 无法连接"
+        echo "✅ firewalld 防火墙未运行"
     fi
-done
+elif command -v ufw > /dev/null 2>&1; then
+    if ufw status | grep -q "Status: active"; then
+        echo "⚠️  ufw 防火墙正在运行"
+        ufw status | head -5
+    else
+        echo "✅ ufw 防火墙未运行"
+    fi
+else
+    echo "ℹ️  未检测到常见防火墙工具"
+fi
 
-# 6. 检查防火墙（如果可能）
 echo ""
-echo "6. 检查常见问题..."
-echo "提示: 如果端口无法连接，请检查："
-echo "  - 服务是否正在运行"
-echo "  - 端口是否在 5000-5010 范围内（防火墙允许的范围）"
-echo "  - 应用是否监听 0.0.0.0（而不是 127.0.0.1）"
+echo "=========================================="
+echo "5. 本地连接测试"
+echo "=========================================="
+
+# 测试本地连接
+if curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://localhost:5000 > /dev/null 2>&1; then
+    echo "✅ 后端本地连接成功 (http://localhost:5000)"
+else
+    echo "❌ 后端本地连接失败 (http://localhost:5000)"
+fi
+
+if curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://localhost:5010 > /dev/null 2>&1; then
+    echo "✅ 前端本地连接成功 (http://localhost:5010)"
+else
+    echo "❌ 前端本地连接失败 (http://localhost:5010)"
+fi
 
 echo ""
 echo "=========================================="
 echo "诊断完成"
 echo "=========================================="
 echo ""
-echo "常用命令："
-echo "  查看完整后端日志: tail -f backend.log"
-echo "  查看完整前端日志: tail -f frontend.log"
-echo "  重启服务: ./stop.sh && ./start.sh"
-echo "  检查进程: ps aux | grep -E 'python|node'"
-echo "=========================================="
+echo "如果进程已停止，尝试重新启动:"
+echo "  ./start.sh"
+echo ""
+echo "如果端口未监听，检查日志:"
+echo "  tail -f backend.log"
+echo "  tail -f frontend.log"
+echo ""
+echo "如果需要开放防火墙端口:"
+echo "  sudo firewall-cmd --add-port=5000/tcp --permanent"
+echo "  sudo firewall-cmd --add-port=5010/tcp --permanent"
+echo "  sudo firewall-cmd --reload"
+echo ""
 
