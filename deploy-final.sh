@@ -5,7 +5,7 @@
 # 示例: ./deploy-final.sh 5007 5008  (IP访问，端口范围5000-5010)
 # 示例: ./deploy-final.sh 8806 8807  (域名访问，mathew的端口是8806)
 
-set -e
+# set -e  # 暂时注释掉，允许错误处理
 
 BACKEND_PORT=${1:-5007}
 FRONTEND_PORT=${2:-5008}
@@ -60,13 +60,16 @@ sleep 2
 echo ""
 echo "🔍 检查端口占用..."
 for port in $BACKEND_PORT $FRONTEND_PORT; do
-    PID=$(lsof -ti :$port 2>/dev/null)
-    if [ ! -z "$PID" ]; then
+    PID=$(lsof -ti :$port 2>/dev/null || true)
+    if [ ! -z "$PID" ] && [ "$PID" != "" ]; then
         echo "   端口 $port 被进程 $PID 占用，正在停止..."
         kill -9 $PID 2>/dev/null || true
         sleep 1
+    else
+        echo "   端口 $port 空闲"
     fi
 done
+echo "   端口检查完成，继续执行..."
 
 # 步骤 3: 安装前端依赖
 echo ""
