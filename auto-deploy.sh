@@ -5,8 +5,8 @@
 
 set -e  # 遇到错误立即退出
 
-BACKEND_PORT=${1:-5007}
-FRONTEND_PORT=${2:-5008}
+BACKEND_PORT=${1:-5009}
+FRONTEND_PORT=${2:-5010}
 
 echo "=========================================="
 echo "完全自动化部署脚本"
