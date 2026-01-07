@@ -72,7 +72,6 @@ function authHeaders() {
   // 如果 Token 不存在，返回空对象，表示未登录状态
   return token ? { Authorization: `Token ${token}` } : {};
 }
-}
 
 function getCacheKey(path, options) {
   if (options.method && options.method !== 'GET') return null;

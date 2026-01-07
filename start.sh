@@ -31,21 +31,36 @@ echo ""
 echo "正在启动后端服务..."
 cd backend
 
-# 检查虚拟环境
+# 确定虚拟环境路径
 if [ -d "backend-env" ]; then
-    source backend-env/bin/activate
-    echo "已激活虚拟环境"
+    VENV_PATH="$(pwd)/backend-env"
 elif [ -d "../backend-env" ]; then
-    source ../backend-env/bin/activate
-    echo "已激活虚拟环境"
+    VENV_PATH="$(cd .. && pwd)/backend-env"
+else
+    echo "错误: 未找到虚拟环境，请先创建虚拟环境并安装依赖"
+    exit 1
 fi
 
-# 使用 nohup 在后台启动 Django 服务器
+echo "虚拟环境路径: $VENV_PATH"
+
+# 检查并安装依赖
+if [ ! -f "$VENV_PATH/bin/python" ]; then
+    echo "错误: 虚拟环境无效"
+    exit 1
+fi
+
+# 使用虚拟环境的 python 在后台启动 Django 服务器
 # 重要: 必须使用 0.0.0.0 才能从外部访问
-nohup python3 manage.py runserver 0.0.0.0:$BACKEND_PORT > ../backend.log 2>&1 &
+nohup "$VENV_PATH/bin/python" manage.py runserver 0.0.0.0:$BACKEND_PORT > ../backend.log 2>&1 &
 BACKEND_PID=$!
 echo "后端已启动 (PID: $BACKEND_PID, 端口: $BACKEND_PORT)"
 echo "后端日志: backend.log"
+
+# 等待一秒检查进程是否还在运行
+sleep 1
+if ! ps -p $BACKEND_PID > /dev/null 2>&1; then
+    echo "⚠️  后端进程启动后立即退出，请检查日志: tail -f ../backend.log"
+fi
 
 # 回到项目根目录
 cd ..
