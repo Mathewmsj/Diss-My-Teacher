@@ -81,6 +81,12 @@ echo "从服务器外部访问:"
 echo "后端: http://110.40.153.38:$BACKEND_PORT"
 echo "前端: http://110.40.153.38:$FRONTEND_PORT"
 echo ""
+if [ "$BACKEND_PORT" = "8806" ]; then
+    echo "域名访问:"
+    echo "前端: http://mathew.yunguhs.com 或 https://mathew.yunguhs.com"
+    echo "后端 API: http://mathew.yunguhs.com/api 或 https://mathew.yunguhs.com/api"
+    echo ""
+fi
 echo "查看日志:"
 echo "  tail -f backend.log    # 后端日志"
 echo "  tail -f frontend.log   # 前端日志"
