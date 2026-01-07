@@ -59,24 +59,29 @@ echo "=========================================="
 echo "2. 检查端口监听"
 echo "=========================================="
 
-# 检查5009端口（后端）
-if netstat -tuln 2>/dev/null | grep -q ":5009 "; then
-    echo "✅ 端口 5009 (后端) 正在监听"
-    netstat -tuln | grep ":5009 "
-elif ss -tuln 2>/dev/null | grep -q ":5009 "; then
-    echo "✅ 端口 5009 (后端) 正在监听"
-    ss -tuln | grep ":5009 "
-else
-    echo "❌ 端口 5009 (后端) 未在监听"
-fi
-
-# 检查5000端口（旧端口，可能还有残留）
+# 检查5000端口（后端）
 if netstat -tuln 2>/dev/null | grep -q ":5000 "; then
-    echo "⚠️  端口 5000 (旧后端) 仍在监听，可能需要清理"
-    netstat -tuln | grep ":5000 "
+    LISTEN_INFO=$(netstat -tuln | grep ":5000 ")
+    if echo "$LISTEN_INFO" | grep -q "0.0.0.0"; then
+        echo "✅ 端口 5000 (后端) 正在监听 (0.0.0.0 - 可外部访问)"
+    elif echo "$LISTEN_INFO" | grep -q "127.0.0.1"; then
+        echo "⚠️  端口 5000 (后端) 正在监听 (127.0.0.1 - 仅本地访问，需要清理)"
+    else
+        echo "✅ 端口 5000 (后端) 正在监听"
+    fi
+    echo "$LISTEN_INFO"
 elif ss -tuln 2>/dev/null | grep -q ":5000 "; then
-    echo "⚠️  端口 5000 (旧后端) 仍在监听，可能需要清理"
-    ss -tuln | grep ":5000 "
+    LISTEN_INFO=$(ss -tuln | grep ":5000 ")
+    if echo "$LISTEN_INFO" | grep -q "0.0.0.0"; then
+        echo "✅ 端口 5000 (后端) 正在监听 (0.0.0.0 - 可外部访问)"
+    elif echo "$LISTEN_INFO" | grep -q "127.0.0.1"; then
+        echo "⚠️  端口 5000 (后端) 正在监听 (127.0.0.1 - 仅本地访问，需要清理)"
+    else
+        echo "✅ 端口 5000 (后端) 正在监听"
+    fi
+    echo "$LISTEN_INFO"
+else
+    echo "❌ 端口 5000 (后端) 未在监听"
 fi
 
 # 检查5010端口（前端）
