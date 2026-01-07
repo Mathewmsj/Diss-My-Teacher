@@ -59,15 +59,24 @@ echo "=========================================="
 echo "2. 检查端口监听"
 echo "=========================================="
 
-# 检查5000端口（后端）
+# 检查5009端口（后端）
+if netstat -tuln 2>/dev/null | grep -q ":5009 "; then
+    echo "✅ 端口 5009 (后端) 正在监听"
+    netstat -tuln | grep ":5009 "
+elif ss -tuln 2>/dev/null | grep -q ":5009 "; then
+    echo "✅ 端口 5009 (后端) 正在监听"
+    ss -tuln | grep ":5009 "
+else
+    echo "❌ 端口 5009 (后端) 未在监听"
+fi
+
+# 检查5000端口（旧端口，可能还有残留）
 if netstat -tuln 2>/dev/null | grep -q ":5000 "; then
-    echo "✅ 端口 5000 (后端) 正在监听"
+    echo "⚠️  端口 5000 (旧后端) 仍在监听，可能需要清理"
     netstat -tuln | grep ":5000 "
 elif ss -tuln 2>/dev/null | grep -q ":5000 "; then
-    echo "✅ 端口 5000 (后端) 正在监听"
+    echo "⚠️  端口 5000 (旧后端) 仍在监听，可能需要清理"
     ss -tuln | grep ":5000 "
-else
-    echo "❌ 端口 5000 (后端) 未在监听"
 fi
 
 # 检查5010端口（前端）

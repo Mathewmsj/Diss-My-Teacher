@@ -5,7 +5,11 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     host: '0.0.0.0', // 监听所有网络接口
-    port: 8080, // 使用更常见的端口，防火墙通常允许
-    open: true
+    port: parseInt(process.env.PORT) || 8080, // 支持环境变量 PORT，默认 8080
+    open: false, // 服务器部署时不自动打开浏览器
+    watch: {
+      // 排除虚拟环境目录，避免文件监控限制问题
+      ignored: ['**/backend-env/**', '**/node_modules/**', '**/.git/**']
+    }
   }
 })
