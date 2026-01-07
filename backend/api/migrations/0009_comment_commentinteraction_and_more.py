@@ -8,26 +8,37 @@ import django.db.models.deletion
 def create_comment_models_if_not_exist(apps, schema_editor):
     """安全地创建 Comment 和 CommentInteraction 模型（如果不存在）"""
     db = schema_editor.connection.alias
+    db_engine = schema_editor.connection.vendor
+    
     with schema_editor.connection.cursor() as cursor:
-        # 检查 Comment 表是否已存在
-        cursor.execute("""
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                AND table_name = 'api_comment'
-            );
-        """)
-        comment_exists = cursor.fetchone()[0]
+        comment_exists = False
+        interaction_exists = False
         
-        # 检查 CommentInteraction 表是否已存在
-        cursor.execute("""
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                AND table_name = 'api_commentinteraction'
-            );
-        """)
-        interaction_exists = cursor.fetchone()[0]
+        if db_engine == 'postgresql':
+            # PostgreSQL 检查方法
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'api_comment'
+                );
+            """)
+            comment_exists = cursor.fetchone()[0]
+            
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'api_commentinteraction'
+                );
+            """)
+            interaction_exists = cursor.fetchone()[0]
+        elif db_engine == 'sqlite':
+            # SQLite 检查方法
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='api_comment';")
+            comment_exists = cursor.fetchone() is not None
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='api_commentinteraction';")
+            interaction_exists = cursor.fetchone() is not None
         
         # 如果表已存在，跳过创建
         if comment_exists and interaction_exists:
@@ -37,22 +48,40 @@ def create_comment_models_if_not_exist(apps, schema_editor):
     with schema_editor.connection.cursor() as cursor:
         if not comment_exists:
             # 创建 Comment 表
-            cursor.execute("""
-                CREATE TABLE api_comment (
-                    comment_id SERIAL PRIMARY KEY,
-                    content TEXT NOT NULL,
-                    likes INTEGER NOT NULL DEFAULT 0,
-                    dislikes INTEGER NOT NULL DEFAULT 0,
-                    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                    parent_id INTEGER,
-                    rating_id INTEGER NOT NULL,
-                    user_id INTEGER NOT NULL,
-                    FOREIGN KEY (parent_id) REFERENCES api_comment(comment_id) ON DELETE CASCADE,
-                    FOREIGN KEY (rating_id) REFERENCES api_rating(rating_id) ON DELETE CASCADE,
-                    FOREIGN KEY (user_id) REFERENCES api_user(id) ON DELETE CASCADE
-                );
-            """)
+            if db_engine == 'sqlite':
+                cursor.execute("""
+                    CREATE TABLE api_comment (
+                        comment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        content TEXT NOT NULL,
+                        likes INTEGER NOT NULL DEFAULT 0,
+                        dislikes INTEGER NOT NULL DEFAULT 0,
+                        created_at DATETIME NOT NULL,
+                        updated_at DATETIME NOT NULL,
+                        parent_id INTEGER,
+                        rating_id INTEGER NOT NULL,
+                        user_id INTEGER NOT NULL,
+                        FOREIGN KEY (parent_id) REFERENCES api_comment(comment_id) ON DELETE CASCADE,
+                        FOREIGN KEY (rating_id) REFERENCES api_rating(rating_id) ON DELETE CASCADE,
+                        FOREIGN KEY (user_id) REFERENCES api_user(id) ON DELETE CASCADE
+                    );
+                """)
+            else:
+                cursor.execute("""
+                    CREATE TABLE api_comment (
+                        comment_id SERIAL PRIMARY KEY,
+                        content TEXT NOT NULL,
+                        likes INTEGER NOT NULL DEFAULT 0,
+                        dislikes INTEGER NOT NULL DEFAULT 0,
+                        created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                        updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                        parent_id INTEGER,
+                        rating_id INTEGER NOT NULL,
+                        user_id INTEGER NOT NULL,
+                        FOREIGN KEY (parent_id) REFERENCES api_comment(comment_id) ON DELETE CASCADE,
+                        FOREIGN KEY (rating_id) REFERENCES api_rating(rating_id) ON DELETE CASCADE,
+                        FOREIGN KEY (user_id) REFERENCES api_user(id) ON DELETE CASCADE
+                    );
+                """)
             
             # 创建索引
             cursor.execute("""
@@ -66,18 +95,32 @@ def create_comment_models_if_not_exist(apps, schema_editor):
         
         if not interaction_exists:
             # 创建 CommentInteraction 表
-            cursor.execute("""
-                CREATE TABLE api_commentinteraction (
-                    interaction_id SERIAL PRIMARY KEY,
-                    interaction_type VARCHAR(10) NOT NULL,
-                    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                    comment_id INTEGER NOT NULL,
-                    user_id INTEGER NOT NULL,
-                    FOREIGN KEY (comment_id) REFERENCES api_comment(comment_id) ON DELETE CASCADE,
-                    FOREIGN KEY (user_id) REFERENCES api_user(id) ON DELETE CASCADE,
-                    UNIQUE (user_id, comment_id)
-                );
-            """)
+            if db_engine == 'sqlite':
+                cursor.execute("""
+                    CREATE TABLE api_commentinteraction (
+                        interaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        interaction_type VARCHAR(10) NOT NULL,
+                        created_at DATETIME NOT NULL,
+                        comment_id INTEGER NOT NULL,
+                        user_id INTEGER NOT NULL,
+                        FOREIGN KEY (comment_id) REFERENCES api_comment(comment_id) ON DELETE CASCADE,
+                        FOREIGN KEY (user_id) REFERENCES api_user(id) ON DELETE CASCADE,
+                        UNIQUE (user_id, comment_id)
+                    );
+                """)
+            else:
+                cursor.execute("""
+                    CREATE TABLE api_commentinteraction (
+                        interaction_id SERIAL PRIMARY KEY,
+                        interaction_type VARCHAR(10) NOT NULL,
+                        created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                        comment_id INTEGER NOT NULL,
+                        user_id INTEGER NOT NULL,
+                        FOREIGN KEY (comment_id) REFERENCES api_comment(comment_id) ON DELETE CASCADE,
+                        FOREIGN KEY (user_id) REFERENCES api_user(id) ON DELETE CASCADE,
+                        UNIQUE (user_id, comment_id)
+                    );
+                """)
             
             # 创建索引
             cursor.execute("""

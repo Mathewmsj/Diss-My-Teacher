@@ -6,42 +6,69 @@ from django.db import migrations, models
 def add_is_featured_if_not_exists(apps, schema_editor):
     """安全地添加 is_featured 字段（如果不存在）"""
     db = schema_editor.connection.alias
+    db_engine = schema_editor.connection.vendor
+    
     with schema_editor.connection.cursor() as cursor:
-        # 检查字段是否已存在
-        cursor.execute("""
-            SELECT EXISTS (
-                SELECT FROM information_schema.columns 
-                WHERE table_schema = 'public' 
-                AND table_name = 'api_rating' 
-                AND column_name = 'is_featured'
-            );
-        """)
-        field_exists = cursor.fetchone()[0]
+        field_exists = False
+        
+        if db_engine == 'postgresql':
+            # PostgreSQL 检查方法
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'api_rating' 
+                    AND column_name = 'is_featured'
+                );
+            """)
+            field_exists = cursor.fetchone()[0]
+        elif db_engine == 'sqlite':
+            # SQLite 检查方法
+            cursor.execute("PRAGMA table_info(api_rating);")
+            columns = cursor.fetchall()
+            field_exists = any(col[1] == 'is_featured' for col in columns)
         
         if not field_exists:
-            # 添加字段
-            cursor.execute("""
-                ALTER TABLE api_rating 
-                ADD COLUMN is_featured BOOLEAN NOT NULL DEFAULT FALSE;
-            """)
+            # 添加字段（SQLite和PostgreSQL都支持）
+            if db_engine == 'sqlite':
+                cursor.execute("""
+                    ALTER TABLE api_rating 
+                    ADD COLUMN is_featured INTEGER NOT NULL DEFAULT 0;
+                """)
+            else:
+                cursor.execute("""
+                    ALTER TABLE api_rating 
+                    ADD COLUMN is_featured BOOLEAN NOT NULL DEFAULT FALSE;
+                """)
         
         # 检查索引是否已存在
-        cursor.execute("""
-            SELECT EXISTS (
-                SELECT FROM pg_indexes 
-                WHERE schemaname = 'public' 
-                AND tablename = 'api_rating' 
-                AND indexname = 'api_rating_is_feat_4c18c0_idx'
-            );
-        """)
-        index_exists = cursor.fetchone()[0]
+        index_exists = False
+        if db_engine == 'postgresql':
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM pg_indexes 
+                    WHERE schemaname = 'public' 
+                    AND tablename = 'api_rating' 
+                    AND indexname = 'api_rating_is_feat_4c18c0_idx'
+                );
+            """)
+            index_exists = cursor.fetchone()[0]
+        elif db_engine == 'sqlite':
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='index' AND name='api_rating_is_feat_4c18c0_idx';")
+            index_exists = cursor.fetchone() is not None
         
         if not index_exists:
             # 添加索引
-            cursor.execute("""
-                CREATE INDEX api_rating_is_feat_4c18c0_idx 
-                ON api_rating (is_featured, created_at DESC);
-            """)
+            if db_engine == 'sqlite':
+                cursor.execute("""
+                    CREATE INDEX api_rating_is_feat_4c18c0_idx 
+                    ON api_rating (is_featured, created_at DESC);
+                """)
+            else:
+                cursor.execute("""
+                    CREATE INDEX api_rating_is_feat_4c18c0_idx 
+                    ON api_rating (is_featured, created_at DESC);
+                """)
 
 
 def reverse_add_is_featured(apps, schema_editor):
