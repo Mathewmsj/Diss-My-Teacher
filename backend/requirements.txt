@@ -1,3 +1,7 @@
+# Django 4.2.7（需要 Python 3.8+）
+# 如果安装失败，请尝试：
+# 1. 升级 pip: python -m pip install --upgrade pip
+# 2. 如果还是失败，使用 requirements-compat.txt（Django 3.2.25）
 Django==4.2.7
 djangorestframework==3.14.0
 django-cors-headers==4.6.0
