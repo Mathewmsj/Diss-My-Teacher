@@ -6,7 +6,7 @@
 # 示例: ./start.sh 8806 8807  (域名访问，mathew的端口是8806)
 
 # 获取端口参数（如果未提供，使用默认值）
-BACKEND_PORT=${1:-5000}
+BACKEND_PORT=${1:-5009}
 FRONTEND_PORT=${2:-5010}
 
 echo "=========================================="
@@ -25,6 +25,18 @@ if [ ! -f "backend/manage.py" ]; then
     echo "错误: 找不到 backend/manage.py，请确保在项目根目录运行此脚本"
     exit 1
 fi
+
+# 清理端口占用（如果存在）
+echo ""
+echo "检查端口占用..."
+if command -v lsof > /dev/null 2>&1; then
+    lsof -ti:$BACKEND_PORT | xargs kill -9 2>/dev/null || true
+    lsof -ti:$FRONTEND_PORT | xargs kill -9 2>/dev/null || true
+elif command -v fuser > /dev/null 2>&1; then
+    fuser -k $BACKEND_PORT/tcp 2>/dev/null || true
+    fuser -k $FRONTEND_PORT/tcp 2>/dev/null || true
+fi
+sleep 1
 
 # 1. 启动后端 (Django)
 echo ""
