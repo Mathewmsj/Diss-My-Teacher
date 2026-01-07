@@ -2,7 +2,7 @@
 # 适用于 Python 3.6+
 Django==3.2.25
 djangorestframework==3.14.0
-django-cors-headers==3.14.0
+django-cors-headers==3.10.1
 gunicorn==20.1.0
 dj-database-url==2.0.0
 psycopg2-binary==2.9.9

@@ -93,31 +93,53 @@ fi
 
 cd backend
 
+# 检查可用的 Python 版本
+echo "   检查可用的 Python 版本..."
+if command -v python3.9 >/dev/null 2>&1; then
+    PYTHON_CMD="python3.9"
+    echo "   ✅ 找到 Python 3.9"
+elif command -v python3.8 >/dev/null 2>&1; then
+    PYTHON_CMD="python3.8"
+    echo "   ✅ 找到 Python 3.8"
+elif command -v python3 >/dev/null 2>&1; then
+    PYTHON_CMD="python3"
+    echo "   ⚠️  使用默认 python3"
+else
+    echo "   ❌ 未找到 Python 3"
+    cd ..
+    exit 1
+fi
+
 # 检查 Python 版本
-PYTHON_VERSION=$(python3 --version 2>&1)
-echo "   Python 版本: $PYTHON_VERSION"
+PYTHON_VERSION=$($PYTHON_CMD --version 2>&1)
+echo "   使用 Python: $PYTHON_VERSION"
 
-PYTHON_MAJOR=$(python3 -c "import sys; print(sys.version_info.major)" 2>/dev/null || echo "3")
-PYTHON_MINOR=$(python3 -c "import sys; print(sys.version_info.minor)" 2>/dev/null || echo "6")
+PYTHON_MAJOR=$($PYTHON_CMD -c "import sys; print(sys.version_info.major)" 2>/dev/null || echo "3")
+PYTHON_MINOR=$($PYTHON_CMD -c "import sys; print(sys.version_info.minor)" 2>/dev/null || echo "6")
 
-# 创建虚拟环境
+# 创建虚拟环境（使用检测到的 Python 版本）
 echo "   创建虚拟环境..."
-python3 -m venv backend-env
+$PYTHON_CMD -m venv backend-env
 source backend-env/bin/activate
 
 # 验证虚拟环境
 VENV_PYTHON=$(python3 --version 2>&1)
 echo "   虚拟环境 Python: $VENV_PYTHON"
 
+# 再次检查虚拟环境中的 Python 版本
+VENV_PYTHON_MAJOR=$(python3 -c "import sys; print(sys.version_info.major)" 2>/dev/null || echo "3")
+VENV_PYTHON_MINOR=$(python3 -c "import sys; print(sys.version_info.minor)" 2>/dev/null || echo "6")
+
 # 安装后端依赖
 echo "   安装后端依赖..."
 pip install -q --upgrade pip
 
-if [ "$PYTHON_MAJOR" -ge 3 ] && [ "$PYTHON_MINOR" -ge 8 ]; then
+# 使用虚拟环境中的 Python 版本判断
+if [ "$VENV_PYTHON_MAJOR" -ge 3 ] && [ "$VENV_PYTHON_MINOR" -ge 8 ]; then
     echo "   使用标准依赖文件 (Django 4.2.7)..."
     pip install -q -r requirements.txt
 else
-    echo "   ⚠️  Python 版本较旧，使用兼容版本..."
+    echo "   ⚠️  Python 版本较旧 ($VENV_PYTHON_MAJOR.$VENV_PYTHON_MINOR)，使用兼容版本..."
     if [ -f "requirements-compat.txt" ]; then
         pip install -q -r requirements-compat.txt
     else
