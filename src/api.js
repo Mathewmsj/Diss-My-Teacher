@@ -11,8 +11,8 @@ const getApiBase = () => {
   const hostname = window.location.hostname;
   // 检测是否使用域名访问
   if (hostname.includes('yunguhs.com') || (hostname.includes('.') && !hostname.match(/^(\d+\.){3}\d+$/) && hostname !== 'localhost' && hostname !== '127.0.0.1')) {
-    // 使用域名时，使用相对路径，nginx 会自动转发到后端5009端口
-    return '/api';
+    // 使用域名访问前端时，后端使用IP地址访问（5009端口）
+    return 'http://110.40.153.38:5009/api';
   }
   // 检测是否使用IP访问（服务器IP：110.40.153.38）
   if (hostname === '110.40.153.38' || hostname.match(/^(\d+\.){3}\d+$/)) {
