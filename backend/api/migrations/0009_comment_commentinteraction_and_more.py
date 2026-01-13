@@ -132,9 +132,17 @@ def create_comment_models_if_not_exist(apps, schema_editor):
 def reverse_create_comment_models(apps, schema_editor):
     """反向操作：删除表"""
     db = schema_editor.connection.alias
+    db_engine = schema_editor.connection.vendor
+    
     with schema_editor.connection.cursor() as cursor:
-        cursor.execute("DROP TABLE IF EXISTS api_commentinteraction CASCADE;")
-        cursor.execute("DROP TABLE IF EXISTS api_comment CASCADE;")
+        if db_engine == 'sqlite':
+            # SQLite 不支持 CASCADE
+            cursor.execute("DROP TABLE IF EXISTS api_commentinteraction;")
+            cursor.execute("DROP TABLE IF EXISTS api_comment;")
+        else:
+            # PostgreSQL 支持 CASCADE
+            cursor.execute("DROP TABLE IF EXISTS api_commentinteraction CASCADE;")
+            cursor.execute("DROP TABLE IF EXISTS api_comment CASCADE;")
 
 
 class Migration(migrations.Migration):

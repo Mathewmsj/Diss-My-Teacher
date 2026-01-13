@@ -1,9 +1,11 @@
-# 兼容旧 Python 版本的依赖文件
-# 适用于 Python 3.6+
+# 兼容旧版本 Python 的依赖文件
+# 如果 Django==4.2.7 安装失败，使用此文件
+# Django 3.2.x 支持 Python 3.6+
+
 Django==3.2.25
 djangorestframework==3.14.0
-django-cors-headers==3.10.1
-gunicorn==20.1.0
-dj-database-url==2.0.0
-psycopg2-binary==2.9.9
+django-cors-headers==4.6.0
+gunicorn==21.2.0
+dj-database-url==2.3.0
+psycopg2-binary==2.9.10
 
