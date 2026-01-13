@@ -2,23 +2,12 @@
 
 # 启动脚本 - Rate My Teacher 应用
 # 使用方法: ./start.sh [backend_port] [frontend_port]
-#
-# 端口分配方案：
-# 1. 域名访问（推荐）：./start.sh 8806 8807
-#    - 前端：http://mathew.yunguhs.com (nginx转发到8807)
-#    - 后端：http://mathew.yunguhs.com/api (nginx转发到8806)
-#
-# 2. 混合访问：./start.sh 8806 5010
-#    - 前端：http://110.40.153.38:5010 (IP访问)
-#    - 后端：http://mathew.yunguhs.com/api (域名访问，nginx转发到8806)
-#
-# 3. IP访问：./start.sh 5009 5010
-#    - 前端：http://110.40.153.38:5010
-#    - 后端：http://110.40.153.38:5009/api
+# 示例: ./start.sh 5010 5009  (直接IP访问，默认端口 - 后端5010，前端5009)
+# 示例: ./start.sh 5010 8806  (域名访问，mathew的端口是8806，后端5010)
 
 # 获取端口参数（如果未提供，使用默认值）
-BACKEND_PORT=${1:-8806}
-FRONTEND_PORT=${2:-5010}
+BACKEND_PORT=${1:-5010}
+FRONTEND_PORT=${2:-5009}
 
 echo "=========================================="
 echo "Rate My Teacher 启动脚本"
@@ -133,29 +122,20 @@ echo "后端地址: http://0.0.0.0:$BACKEND_PORT"
 echo "前端地址: http://0.0.0.0:$FRONTEND_PORT"
 echo ""
 echo "从服务器外部访问:"
-# 检查是否是域名访问配置（前端端口在8800-8899范围，通常是域名端口）
-if [ "$FRONTEND_PORT" -ge 8800 ] && [ "$FRONTEND_PORT" -le 8899 ]; then
-    echo "域名访问配置:"
-    echo "  前端: http://mathew.yunguhs.com 或 https://mathew.yunguhs.com"
-    echo "        (nginx转发到端口 $FRONTEND_PORT)"
-    echo "  后端: http://mathew.yunguhs.com/api 或 https://mathew.yunguhs.com/api"
-    echo "        (nginx转发到端口 $BACKEND_PORT)"
+if [ "$FRONTEND_PORT" = "8806" ]; then
+    echo "域名访问（推荐）:"
+    echo "前端: http://mathew.yunguhs.com 或 https://mathew.yunguhs.com"
+    echo "后端 API: http://mathew.yunguhs.com/api 或 https://mathew.yunguhs.com/api"
     echo ""
     echo "IP访问（备用）:"
-    echo "  前端: http://110.40.153.38:$FRONTEND_PORT"
-    echo "  后端: http://110.40.153.38:$BACKEND_PORT"
-elif [ "$BACKEND_PORT" = "8806" ]; then
-    echo "混合访问配置:"
-    echo "  后端（域名访问）:"
-    echo "    API: http://mathew.yunguhs.com/api 或 https://mathew.yunguhs.com/api"
-    echo "         (nginx转发到端口 $BACKEND_PORT)"
-    echo ""
-    echo "  前端（IP访问）:"
-    echo "    应用: http://110.40.153.38:$FRONTEND_PORT"
+    echo "后端: http://110.40.153.38:$BACKEND_PORT"
+    echo "前端: http://110.40.153.38:$FRONTEND_PORT"
 else
-    echo "IP访问配置:"
-    echo "  前端: http://110.40.153.38:$FRONTEND_PORT"
-    echo "  后端: http://110.40.153.38:$BACKEND_PORT/api"
+    echo "IP访问:"
+    echo "后端: http://110.40.153.38:$BACKEND_PORT"
+    echo "前端: http://110.40.153.38:$FRONTEND_PORT"
+    echo ""
+    echo "提示: 使用域名访问请运行: ./start.sh 5010 8806"
 fi
 echo ""
 echo "查看日志:"

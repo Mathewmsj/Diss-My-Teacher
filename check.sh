@@ -59,29 +59,48 @@ echo "=========================================="
 echo "2. 检查端口监听"
 echo "=========================================="
 
-# 检查8806端口（后端 - 域名访问）
+# 检查5010端口（后端）
+if netstat -tuln 2>/dev/null | grep -q ":5010 "; then
+    LISTEN_INFO=$(netstat -tuln | grep ":5010 ")
+    if echo "$LISTEN_INFO" | grep -q "0.0.0.0"; then
+        echo "✅ 端口 5010 (后端) 正在监听 (0.0.0.0 - 可外部访问)"
+    elif echo "$LISTEN_INFO" | grep -q "127.0.0.1"; then
+        echo "⚠️  端口 5010 (后端) 正在监听 (127.0.0.1 - 仅本地访问，需要清理)"
+    else
+        echo "✅ 端口 5010 (后端) 正在监听"
+    fi
+    echo "$LISTEN_INFO"
+elif ss -tuln 2>/dev/null | grep -q ":5010 "; then
+    LISTEN_INFO=$(ss -tuln | grep ":5010 ")
+    if echo "$LISTEN_INFO" | grep -q "0.0.0.0"; then
+        echo "✅ 端口 5010 (后端) 正在监听 (0.0.0.0 - 可外部访问)"
+    elif echo "$LISTEN_INFO" | grep -q "127.0.0.1"; then
+        echo "⚠️  端口 5010 (后端) 正在监听 (127.0.0.1 - 仅本地访问，需要清理)"
+    else
+        echo "✅ 端口 5010 (后端) 正在监听"
+    fi
+    echo "$LISTEN_INFO"
+else
+    echo "❌ 端口 5010 (后端) 未在监听"
+fi
+
+# 检查8806端口（前端 - 域名访问）
 if netstat -tuln 2>/dev/null | grep -q ":8806 "; then
     LISTEN_INFO=$(netstat -tuln | grep ":8806 ")
     if echo "$LISTEN_INFO" | grep -q "0.0.0.0"; then
-        echo "✅ 端口 8806 (后端) 正在监听 (0.0.0.0 - 可外部访问)"
-    elif echo "$LISTEN_INFO" | grep -q "127.0.0.1"; then
-        echo "⚠️  端口 8806 (后端) 正在监听 (127.0.0.1 - 仅本地访问，需要清理)"
+        echo "✅ 端口 8806 (前端 - 域名) 正在监听 (0.0.0.0 - 可外部访问)"
     else
-        echo "✅ 端口 8806 (后端) 正在监听"
+        echo "✅ 端口 8806 (前端 - 域名) 正在监听"
     fi
     echo "$LISTEN_INFO"
 elif ss -tuln 2>/dev/null | grep -q ":8806 "; then
     LISTEN_INFO=$(ss -tuln | grep ":8806 ")
     if echo "$LISTEN_INFO" | grep -q "0.0.0.0"; then
-        echo "✅ 端口 8806 (后端) 正在监听 (0.0.0.0 - 可外部访问)"
-    elif echo "$LISTEN_INFO" | grep -q "127.0.0.1"; then
-        echo "⚠️  端口 8806 (后端) 正在监听 (127.0.0.1 - 仅本地访问，需要清理)"
+        echo "✅ 端口 8806 (前端 - 域名) 正在监听 (0.0.0.0 - 可外部访问)"
     else
-        echo "✅ 端口 8806 (后端) 正在监听"
+        echo "✅ 端口 8806 (前端 - 域名) 正在监听"
     fi
     echo "$LISTEN_INFO"
-else
-    echo "❌ 端口 8806 (后端) 未在监听"
 fi
 
 # 检查5010端口（前端）
