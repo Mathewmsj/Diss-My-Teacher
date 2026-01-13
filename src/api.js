@@ -11,17 +11,18 @@ const getApiBase = () => {
   const hostname = window.location.hostname;
   // 检测是否使用域名访问
   if (hostname.includes('yunguhs.com') || (hostname.includes('.') && !hostname.match(/^(\d+\.){3}\d+$/) && hostname !== 'localhost' && hostname !== '127.0.0.1')) {
-    // 使用域名时，使用相对路径，nginx 会自动转发到后端
+    // 使用域名时，后端通过nginx转发，使用相对路径 /api
+    // nginx会将 /api 转发到后端端口 5010
     return '/api';
   }
   // 检测是否使用IP访问（服务器IP：110.40.153.38）
   if (hostname === '110.40.153.38' || hostname.match(/^(\d+\.){3}\d+$/)) {
-    // 使用IP访问时，使用相同IP的后端端口5010
-    return `http://${hostname}:5010/api`;
+    // 使用IP访问时，使用相同IP的后端端口5009
+    return `http://${hostname}:5009/api`;
   }
   // 本地开发时使用 localhost
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:5010/api';
+    return 'http://localhost:5009/api';
   }
   // 默认使用 Render 地址
   return 'https://diss-my-teacher.onrender.com/api';
