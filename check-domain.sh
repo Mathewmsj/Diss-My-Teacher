@@ -7,8 +7,8 @@ echo "域名访问诊断"
 echo "=========================================="
 
 DOMAIN="mathew.yunguhs.com"
-BACKEND_PORT=8806
-FRONTEND_PORT=8807
+BACKEND_PORT=5010
+FRONTEND_PORT=8806
 
 echo "域名: $DOMAIN"
 echo "后端端口: $BACKEND_PORT"
