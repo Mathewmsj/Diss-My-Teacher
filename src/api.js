@@ -11,17 +11,18 @@ const getApiBase = () => {
   const hostname = window.location.hostname;
   // 检测是否使用域名访问
   if (hostname.includes('yunguhs.com') || (hostname.includes('.') && !hostname.match(/^(\d+\.){3}\d+$/) && hostname !== 'localhost' && hostname !== '127.0.0.1')) {
-    // 使用域名时，使用相对路径，nginx 会自动转发到后端
-    return '/api';
+    // 使用域名时，如果nginx未配置，直接使用IP访问后端（临时方案）
+    // 如果nginx已正确配置，可以改为: return '/api';
+    return 'http://110.40.153.38:5010/api';
   }
   // 检测是否使用IP访问（服务器IP：110.40.153.38）
   if (hostname === '110.40.153.38' || hostname.match(/^(\d+\.){3}\d+$/)) {
-    // 使用IP访问时，使用相同IP的后端端口5010
-    return `http://${hostname}:5010/api`;
+    // 使用IP访问时，使用相同IP的后端端口5009
+    return `http://${hostname}:5009/api`;
   }
   // 本地开发时使用 localhost
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:5010/api';
+    return 'http://localhost:5009/api';
   }
   // 默认使用 Render 地址
   return 'https://diss-my-teacher.onrender.com/api';
@@ -259,6 +260,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ school_code, username, password }),
     }),
+    }),
   signup: (payload) =>
     request('/signup/', {
       method: 'POST',
@@ -387,6 +389,7 @@ export const api = {
     request('/superadmin-login/', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
+    }),
     }),
   getSuperAdminStats: () => request('/superadmin/stats/'),
   getAllRatings: () => request('/superadmin/all_ratings/'),
