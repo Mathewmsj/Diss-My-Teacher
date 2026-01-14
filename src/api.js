@@ -19,9 +19,10 @@ const getApiBase = () => {
     // 使用IP访问时，使用相同IP的后端端口5009
     return `http://${hostname}:5009/api`;
   }
-  // 本地开发时使用 localhost
+  // 本地开发时使用 localhost（默认8000端口，可通过环境变量覆盖）
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:5009/api';
+    // 如果设置了 VITE_API_BASE，优先使用；否则使用默认端口8000
+    return 'http://localhost:8000/api';
   }
   // 默认使用 Render 地址
   return 'https://diss-my-teacher.onrender.com/api';
